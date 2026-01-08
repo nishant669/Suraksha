@@ -1,0 +1,19 @@
+# Sensitive Data
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+suraksha.db
+
+# Node / Frontend
+node_modules/
+dist/
+.eslintcache
+
+# Local Editor Settings
+.vscode/
+.idea/
