@@ -82,6 +82,17 @@ async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user
     db.commit()
     return {"status": "SOS Alert Sent successfully", "id": new_sos.id}
 
+# Add this near your other routes in main.py
+@app.get("/api/safety-tips")
+async def get_safety_tips():
+    tips = [
+        "Always share your live location with a trusted contact when traveling alone.",
+        "Keep your emergency contacts updated in the Suraksha app settings.",
+        "If you feel unsafe, use the 'Fake Call' feature to deter attention.",
+        "Familiarize yourself with the nearest police station icons on your map."
+    ]
+    return {"tip": random.choice(tips)}
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy"}
