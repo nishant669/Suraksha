@@ -67,6 +67,10 @@ async def get_profile(current_user: User = Depends(get_current_active_user)):
 
 @app.post("/api/sos/create")
 async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    # NEW LOGIC: Log the emergency to the terminal for now
+    print(f"🚨 EMERGENCY ALERT from {current_user.name} ({current_user.phone})")
+    print(f"📍 Location: {sos.latitude}, {sos.longitude}")
+    
     new_sos = SOS(
         user_id=current_user.id,
         latitude=sos.latitude,
@@ -76,7 +80,7 @@ async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user
     )
     db.add(new_sos)
     db.commit()
-    return {"status": "SOS Alert Sent", "id": new_sos.id}
+    return {"status": "SOS Alert Sent successfully", "id": new_sos.id}
 
 @app.get("/api/health")
 async def health_check():
