@@ -33,3 +33,9 @@ export const verifyAccount = async (otpData) => {
   if (!response.ok) throw new Error(data.detail || "Verification failed");
   return data;
 };
+
+export const getWeather = async (lat, lon) => {
+  const response = await fetch(`http://127.0.0.1:8000/api/weather?lat=${lat}&lon=${lon}`);
+  if (!response.ok) throw new Error("Weather service unavailable");
+  return await response.json();
+};

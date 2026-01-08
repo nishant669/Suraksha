@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import random
-
+import requests
 # Modular Imports
 from app.db.database import engine, get_db, Base
 from app.db.models import User, SOS
@@ -10,11 +10,18 @@ from app.schemas.schemas import UserCreate, UserResponse, Token, UserLogin, SOSC
 from app.core.auth import get_current_active_user, get_password_hash, create_access_token, verify_password
 from app.core.config import settings
 
-# Initialize Database Tables
 Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Suraksha API")
 
+@app.get("/api/weather")
+async def get_weather(lat: float, lon: float):
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto"
+    try:
+        response = requests.get(url)
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+# Initialize Database Tables
 # Fix 1: Inclusive CORS for Development
 app.add_middleware(
     CORSMiddleware,

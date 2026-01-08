@@ -23,16 +23,18 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+# This is the function main.py is looking for
+async def get_current_active_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub") # This gets the user.id we stored in main.py
+        user_id: str = payload.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid Token")
+            raise HTTPException(status_code=401, detail="Invalid token")
     except JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
     
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    # Check if sub is email or ID (matches your main.py login sub)
+    user = db.query(User).filter((User.id == user_id) | (User.email == user_id)).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user

@@ -1,20 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Shield, Menu, X, MapPin, Phone, Users, MessageSquare, Map as MapIcon, 
-  User, Home, Info, Mail, HelpCircle, AlertTriangle, Bell, LogOut, 
-  Activity, Send, Download, CheckCircle, Navigation, Clock, Star, Check, 
-  Search, Filter, ChevronRight, Settings, FileText, Lock, Calendar, Cloud 
-} from 'lucide-react';
-import { useAuth } from './context/AuthContext.jsx'; 
-
-// --- LEAFLET IMPORTS (KEEP ONLY ONE COPY OF THESE) ---
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
+// Optimized single import for all icons
+import { 
+  Cloud, Sun, CloudRain, Shield, Menu, X, MapPin, Phone, Users, 
+  MessageSquare, Map as MapIcon, User, Home, Info, Mail, HelpCircle, 
+  AlertTriangle, Bell, LogOut, Activity, Send, Download, CheckCircle, 
+  Navigation, Clock, Star, Check, Search, Filter, ChevronRight, 
+  Settings, FileText, Lock, Calendar, 
+  Thermometer, Wind, Droplets // Add these three
+} from 'lucide-react';
+
+// Services
+import { getWeather } from './services/api'; 
+import { useAuth } from './context/AuthContext'; 
+
+// Assets
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Fix for missing marker icons
+// Leaflet Icon Fix
 let DefaultIcon = L.icon({
     iconUrl: markerIcon,
     shadowUrl: markerShadow,
@@ -692,139 +699,231 @@ const ForgotPasswordPage = ({ onNavigate }) => {
 };
 
 // ==================== DASHBOARD ====================
-const DashboardPage = () => {
-  const { user } = useAuth();
-  const [sosActive, setSosActive] = useState(false);
-  const [sosCountdown, setSosCountdown] = useState(5);
-  const [toast, setToast] = useState(null);
+// ==================== DASHBOARD COMPONENTS ====================
 
-  useEffect(() => {
-    if (sosActive && sosCountdown > 0) {
-      const timer = setTimeout(() => setSosCountdown(sosCountdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (sosActive && sosCountdown === 0) {
-      setSosActive(false);
-      setSosCountdown(5);
-      setToast({ message: 'Emergency services notified!', type: 'success' });
-    }
-  }, [sosActive, sosCountdown]);
+// ==================== WEATHER WIDGET ====================
+const WeatherWidget = ({ weatherData }) => {
+  if (!weatherData) {
+    return (
+      <Card className="bg-gray-800 border-gray-700 p-8 h-full flex flex-col items-center justify-center text-center">
+        <Cloud className="w-12 h-12 text-blue-400 mb-4 animate-pulse" />
+        <p className="text-gray-400">Loading local weather data...</p>
+      </Card>
+    );
+  }
 
-  const stats = [
-    { label: 'Safe Zones', value: '127', icon: MapPin, color: 'text-green-500' },
-    { label: 'Guides', value: '43', icon: Users, color: 'text-blue-500' },
-    { label: 'Alerts', value: '2', icon: AlertTriangle, color: 'text-orange-500' },
-    { label: 'Routes', value: '89', icon: Navigation, color: 'text-purple-500' },
-  ];
+  return (
+    <Card className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-gray-700 p-8 h-full flex flex-col justify-between shadow-2xl backdrop-blur-md">
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-4xl font-black text-white">{weatherData.temp || '22'}°C</h2>
+          <p className="text-blue-300 font-bold uppercase tracking-widest mt-1">
+            {weatherData.condition || 'Dense Fog'}
+          </p>
+        </div>
+        <div className="p-3 bg-blue-500/20 rounded-2xl">
+          <Sun className="w-10 h-10 text-yellow-400" />
+        </div>
+      </div>
 
-  const alerts = [
-    { title: 'Heavy Rain Alert', message: 'Expect heavy rainfall in Guwahati region', location: 'Guwahati', severity: 'high', time: '2 hours ago' },
-    { title: 'Road Closure', message: 'NH-27 temporarily closed due to landslide', location: 'Shillong', severity: 'medium', time: '5 hours ago' }
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        <div className="bg-gray-900/40 p-4 rounded-xl border border-white/5">
+          <div className="flex items-center gap-2 text-gray-400 mb-1">
+            <Wind className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-tighter">Wind</span>
+          </div>
+          <p className="text-white font-bold">{weatherData.wind || '12'} km/h</p>
+        </div>
+        <div className="bg-gray-900/40 p-4 rounded-xl border border-white/5">
+          <div className="flex items-center gap-2 text-gray-400 mb-1">
+            <Droplets className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-tighter">Humidity</span>
+          </div>
+          <p className="text-white font-bold">{weatherData.humidity || '45'}%</p>
+        </div>
+      </div>
+      
+      <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between text-gray-400">
+        <span className="text-sm font-bold">Bhopal, MP</span>
+        <span className="text-xs font-mono font-bold">Jan 08, 2026</span>
+      </div>
+    </Card>
+  );
+};
+
+// ==================== WEATHER FORECAST SECTION ====================
+const WeatherForecastSection = () => {
+  const forecastData = [
+    { day: "Thu", date: "Jan 8", high: "22°C", low: "4°C", condition: "Fog", icon: <Wind className="w-6 h-6 text-blue-300" /> },
+    { day: "Fri", date: "Jan 9", high: "24°C", low: "6°C", condition: "Hazy", icon: <CloudRain className="w-6 h-6 text-gray-400" /> },
+    { day: "Sat", date: "Jan 10", high: "25°C", low: "8°C", condition: "Sunny", icon: <Sun className="w-6 h-6 text-yellow-500" /> },
+    { day: "Sun", date: "Jan 11", high: "25°C", low: "8°C", condition: "Clear", icon: <Sun className="w-6 h-6 text-yellow-200" /> },
+    { day: "Mon", date: "Jan 12", high: "26°C", low: "9°C", condition: "Sunny", icon: <Sun className="w-6 h-6 text-yellow-400" /> },
+    { day: "Tue", date: "Jan 13", high: "26°C", low: "10°C", condition: "Sunny", icon: <Sun className="w-6 h-6 text-yellow-400" /> },
+    { day: "Wed", date: "Jan 14", high: "27°C", low: "11°C", condition: "Clear", icon: <Sun className="w-6 h-6 text-yellow-300" /> },
   ];
 
   return (
-    <div className="p-6 md:p-8 space-y-8 animate-fade-in">
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-
-      <div>
-        <h1 className="text-4xl font-black mb-2 text-white">Dashboard</h1>
-        <p className="text-gray-300 text-lg">Your safety overview and quick actions</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, idx) => (
-          <Card key={idx} className="p-6 hover:shadow-xl hover:shadow-blue-900/10 transition-all border-gray-700 bg-gray-800">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl bg-secondary flex items-center justify-center`}>
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-              </div>
-              <div>
-                <p className="text-3xl font-black text-white">{stat.value}</p>
-                <p className="text-sm text-gray-300">{stat.label}</p>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* SOS Button */}
-      <div className="flex justify-center py-8">
-        <button
-          onClick={() => setSosActive(true)}
-          className="w-56 h-56 bg-gradient-to-br from-red-600 to-pink-600 rounded-full shadow-2xl shadow-red-900/40 hover:scale-105 transition-all duration-300 flex items-center justify-center group animate-pulse"
-        >
-          <div className="text-center">
-            <AlertTriangle className="w-24 h-24 text-white mx-auto mb-4" />
-            <span className="text-white font-black text-4xl">SOS</span>
-            <p className="text-white/80 text-sm mt-2">Emergency Alert</p>
-          </div>
-        </button>
-      </div>
-
-      {/* User Card */}
-      <Card className="p-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white border-none">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-2xl font-bold">{user?.name}</h3>
-            <p className="text-sm opacity-80 mt-1">Status: Active • Online</p>
-            <p className="text-xs opacity-60 mt-1 font-mono">ID: {user?.blockchain_id?.substring(0, 20)}...</p>
-          </div>
-          <div className="px-4 py-2 bg-white/20 rounded-full text-xs font-bold flex items-center gap-2 backdrop-blur-sm">
-            <Activity className="w-4 h-4" />
-            Blockchain Secured
-          </div>
+    <div className="px-6 py-8 space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-blue-500/10">
+          <Calendar className="w-6 h-6 text-blue-500" />
         </div>
-      </Card>
-
-      {/* Alerts */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-black text-white">Active Alerts</h2>
-          <Button variant="outline" className="gap-2 border-gray-700 text-gray-300 hover:bg-gray-800">
-            <Filter className="w-4 h-4" />
-            Filter
-          </Button>
-        </div>
-        {alerts.map((alert, idx) => (
-          <Card key={idx} className={`p-5 border-l-4 bg-gray-800 border-gray-700 ${
-            alert.severity === 'high' ? 'border-l-red-500' : 'border-l-yellow-500'
-          }`}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className={`w-5 h-5 ${
-                    alert.severity === 'high' ? 'text-red-500' : 'text-yellow-500'
-                  }`} />
-                  <h3 className="font-bold text-lg text-white">{alert.title}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    alert.severity === 'high' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'
-                  }`}>
-                    {alert.severity}
-                  </span>
-                </div>
-                <p className="text-gray-300 mb-2">{alert.message}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {alert.location}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {alert.time}
-                  </span>
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:bg-gray-700">
-                <ChevronRight className="w-5 h-5" />
-              </Button>
+        <h2 className="text-2xl font-black text-white tracking-tighter uppercase italic">7-Day Outlook</h2>
+      </div>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+        {forecastData.map((item, index) => (
+          <div key={index} className="bg-gray-800/40 rounded-2xl p-4 border border-gray-700 hover:border-blue-500 transition-all group text-center">
+            <p className="text-blue-400 font-black text-xs uppercase mb-1">{item.day}</p>
+            <p className="text-gray-500 text-[10px] mb-3 font-bold">{item.date}</p>
+            <div className="flex justify-center mb-3 group-hover:scale-110 transition-transform">
+                {item.icon}
             </div>
-          </Card>
+            <div className="text-sm font-black text-white">{item.high}</div>
+            <div className="text-[10px] text-gray-500 font-bold">{item.low}</div>
+          </div>
         ))}
       </div>
     </div>
   );
 };
 
+// ==================== ACTIVE ALERTS COMPONENT (ROW-WISE) ====================
+const ActiveAlertsSection = () => {
+  const alerts = [
+    {
+      id: "fog-01",
+      title: "Severe Dense Fog Warning",
+      message: "Visibility < 50m in Airport area. Major flight/train delays expected until 11:00 AM.",
+      severity: "high",
+      time: "Updated 10m ago",
+      icon: <Wind className="w-6 h-6" />
+    },
+    {
+      id: "cold-01",
+      title: "Cold Wave Alert",
+      message: "Minimum temperature likely to remain below 5°C for next 48 hours. Frost risk in open areas.",
+      severity: "high",
+      time: "Updated 1h ago",
+      icon: <Thermometer className="w-6 h-6" />
+    },
+    {
+      id: "aqi-01",
+      title: "AQI Advisory: Very Poor",
+      message: "Current AQI: 287. Sensitive groups should avoid outdoor activities and wear N95 masks.",
+      severity: "medium",
+      time: "Updated 3h ago",
+      icon: <AlertTriangle className="w-6 h-6" />
+    }
+  ];
+
+  const getStyles = (sev) => 
+    sev === 'high' 
+      ? 'border-red-600 bg-red-600/10 text-red-500' 
+      : 'border-orange-500 bg-orange-500/10 text-orange-500';
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-3">
+        <Bell className="w-6 h-6 text-red-500 animate-pulse" />
+        <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Live Alert Monitor</h2>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {alerts.map((alert) => (
+          <div key={alert.id} className={`flex flex-col md:flex-row md:items-center gap-6 border-l-[8px] rounded-2xl p-6 transition-all hover:bg-gray-800 ${getStyles(alert.severity)}`}>
+            <div className="flex shrink-0 items-center justify-center p-3 bg-gray-900/50 rounded-xl">
+              {alert.icon}
+            </div>
+            
+            <div className="flex-1">
+              <h3 className="text-lg font-black uppercase tracking-tight text-white mb-1">{alert.title}</h3>
+              <p className="text-sm text-gray-300 font-medium leading-relaxed">{alert.message}</p>
+            </div>
+
+            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 md:text-right">
+              {alert.time}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ==================== MAIN DASHBOARD PAGE ====================
+const DashboardPage = ({ weatherData }) => {
+  const [sosActive, setSosActive] = useState(false);
+  const [sosCountdown, setSosCountdown] = useState(5);
+
+  useEffect(() => {
+    let timer;
+    if (sosActive && sosCountdown > 0) {
+      timer = setTimeout(() => setSosCountdown(sosCountdown - 1), 1000);
+    } else if (sosActive && sosCountdown === 0) {
+      setSosActive(false);
+      setSosCountdown(5);
+      alert("SOS Dispatched! Authorities have been notified with your GPS coordinates.");
+    }
+    return () => clearTimeout(timer);
+  }, [sosActive, sosCountdown]);
+
+  return (
+    <div className="p-6 lg:p-8 space-y-8 animate-fade-in bg-[#020617] min-h-screen">
+      
+      {/* ROW 1: EMERGENCY & CURRENT WEATHER */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+        
+        {/* EMERGENCY COMMAND CENTER */}
+        <Card className="bg-gray-900/60 border-gray-800 p-8 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
+          <h2 className="text-2xl font-black text-white mb-8 uppercase tracking-widest italic">Command Center</h2>
+          
+          <button
+            onClick={() => setSosActive(true)}
+            className={`w-52 h-52 rounded-full shadow-2xl transition-all duration-500 flex items-center justify-center group ${
+              sosActive 
+                ? 'bg-red-600 scale-90 ring-8 ring-red-900/50' 
+                : 'bg-gradient-to-br from-red-600 to-pink-700 hover:scale-105'
+            }`}
+          >
+            <div className="text-center">
+              {sosActive ? (
+                <span className="text-white font-black text-7xl drop-shadow-lg">{sosCountdown}</span>
+              ) : (
+                <>
+                  <Shield className="w-20 h-20 text-white mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                  <span className="text-white font-black text-4xl">SOS</span>
+                </>
+              )}
+            </div>
+          </button>
+          
+          <p className="text-red-500 mt-8 font-black text-xs uppercase tracking-tighter animate-pulse text-center">
+            {sosActive ? "Transmitting GPS..." : "Tap for immediate emergency assistance"}
+          </p>
+        </Card>
+
+        {/* CURRENT WEATHER WIDGET */}
+        <div className="flex flex-col h-full">
+           <WeatherWidget weatherData={weatherData} />
+        </div>
+      </div>
+
+      {/* ROW 2: 7-DAY WEATHER FORECAST */}
+      <div className="w-full bg-gray-900/40 rounded-3xl border border-gray-800 shadow-xl">
+         <WeatherForecastSection />
+      </div>
+
+      {/* ROW 3: LIVE SYSTEM ALERTS (ROW-WISE) */}
+      <div className="w-full bg-gray-900/60 rounded-3xl border border-red-900/20 shadow-2xl overflow-hidden">
+         <ActiveAlertsSection />
+      </div>
+      
+    </div>
+  );
+};
 // ==================== MAP PAGE ====================
 const MapPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -2364,41 +2463,33 @@ const App = () => {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [weather, setWeather] = useState(null);
 
-  // 1. PHASE ONE: Full Screen Loading Animation
-  if (loading) {
-    return <IntroAnimation fastMode={false} />;
-  }
+  useEffect(() => {
+    if (user) {
+      const fetchWeather = async () => {
+        try {
+          // Fetches real data from your backend route
+          const data = await getWeather(23.25, 77.41);
+          setWeather(data);
+        } catch (err) {
+          console.error("Weather fetch failed", err);
+        }
+      };
+      fetchWeather();
+    }
+  }, [user]);
 
-  // 2. PHASE TWO: Split Screen (Animation Left | Login Right)
+  if (loading) return <IntroAnimation fastMode={false} />;
+
   if (!user) {
     const authPage = currentPage === 'register' ? 'register' : 
                      currentPage === 'forgot' ? 'forgot' : 'login';
-    
     return (
       <div className="flex min-h-screen w-full bg-gray-900 text-white overflow-hidden">
-        {/* GLOBAL STYLE FIX FOR WHITE LINES */}
-        <style>{`
-          :root {
-            --background: 222.2 84% 4.9%;
-            --foreground: 210 40% 98%;
-          }
-          /* This forces the browser body to be dark, fixing scroll lines */
-          html, body, #root {
-            background-color: #020817; 
-            color: white;
-            margin: 0;
-            padding: 0;
-          }
-          .scrollbar-none::-webkit-scrollbar { display: none; }
-        `}</style>
-        
-        {/* LEFT SIDE */}
-        <div className="hidden md:flex md:w-1/2 bg-[#020817] relative items-center justify-center overflow-hidden border-r border-gray-700">
+        <div className="hidden md:flex md:w-1/2 bg-[#020817] relative items-center justify-center border-r border-gray-700">
            <IntroAnimation fastMode={true} />
         </div>
-
-        {/* RIGHT SIDE */}
         <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-gray-900">
            <div className="w-full max-w-md animate-fade-in">
              {authPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
@@ -2410,10 +2501,13 @@ const App = () => {
     );
   }
 
-  // 3. PHASE THREE: Authenticated Dashboard Logic
+  // --- PHASE THREE: Authenticated Dashboard Logic ---
   const renderPage = () => {
     switch(currentPage) {
-      case 'dashboard': return <DashboardPage />;
+      case 'dashboard': 
+        // THIS IS THE LAYOUT YOU REQUESTED: SOS + Weather side-by-side
+        return <DashboardPage weatherData={weather} />;
+      
       case 'map': return <MapPage />;
       case 'sos': return <SOSPage />;
       case 'services': return <ServicesPage />;
@@ -2426,23 +2520,14 @@ const App = () => {
       case 'support': return <SupportPage />;
       case 'privacy': return <PrivacyPage />;
       case 'terms': return <TermsPage />;
-      default: return <DashboardPage />;
+      default: return <DashboardPage weatherData={weather} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* GLOBAL STYLE FIX FOR WHITE LINES */}
-      <style>{`
-          html, body, #root {
-            background-color: #111827; /* Matches bg-gray-900 */
-            color: white;
-          }
-      `}</style>
-
       <Header onMenuClick={() => setSidebarOpen(true)} />
       
-      {/* Fixed Layout Container */}
       <div className="flex w-full fixed top-[73px] bottom-0"> 
         <Sidebar 
           isOpen={sidebarOpen} 
@@ -2450,7 +2535,9 @@ const App = () => {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
         />
-        <main className="flex-1 overflow-y-auto bg-gray-900 pb-20 w-full">
+        
+        <main className="flex-1 overflow-y-auto bg-gray-900 pb-20 w-full scrollbar-none">
+          {/* This executes the switch logic above */}
           {renderPage()}
         </main>
       </div>
