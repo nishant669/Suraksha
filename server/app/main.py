@@ -29,14 +29,19 @@ app = FastAPI(title="Suraksha API", lifespan=lifespan)
 
 # In server/app/main.py
 
+# server/app/main.py
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For production, use ["https://suraksha-frontened-org.onrender.com"]
+    allow_origins=[
+        "https://suraksha-frontened-org.onrender.com", # Your specific frontend
+        "http://localhost:5173",                      # Local Vite dev
+        "http://127.0.0.1:5173"
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept"],
+    allow_methods=["*"], # Allow all methods
+    allow_headers=["*"], # Allow all headers
 )
-
 # --- WEATHER ROUTE ---
 
 @app.get("/api/weather")

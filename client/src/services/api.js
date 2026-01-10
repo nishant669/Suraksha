@@ -3,7 +3,8 @@
 // client/src/services/api.js
 
 // Vite uses import.meta.env instead of process.env
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+// Hardcode the production URL to be 100% sure while debugging
+const API_URL = "https://suraksha-a74u.onrender.com/api";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');

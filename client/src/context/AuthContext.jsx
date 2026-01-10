@@ -29,33 +29,24 @@ export const AuthProvider = ({ children }) => {
 
   // 2. Auth Functions (Defined before they are used in the return)
   const login = async (email, password) => {
-    console.log("Attempting login for:", email);
-    try {
-      const data = await api.loginUser({ email, password }); 
-      console.log("Login success, token received");
-      
-      // 1. Save Token First
+  try {
+    const data = await api.loginUser({ email, password }); 
+    
+    // The backend returns { "access_token": "...", "token_type": "bearer" }
+    if (data && data.access_token) {
       localStorage.setItem('token', data.access_token);
-
-      // 2. Fetch Profile (Wrap in try/catch so login doesn't fully fail if profile fails)
-      try {
-        const userData = await api.getUserProfile(); 
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-      } catch (profileError) {
-        console.error("Profile fetch failed, using fallback:", profileError);
-        // Fallback: Create a basic user object from the email if profile fails
-        const fallbackUser = { email: email, name: email.split('@')[0] };
-        setUser(fallbackUser);
-        localStorage.setItem('user', JSON.stringify(fallbackUser));
-      }
       
+      // Fetch the actual user data
+      const userData = await api.getUserProfile(); 
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       return { success: true };
-    } catch (error) {
-      console.error("LOGIN ERROR:", error);
-      return { success: false, message: error.message };
     }
-  };
+  } catch (error) {
+    console.error("Detailed Login Error:", error);
+    return { success: false, message: error.message };
+  }
+};
 
   // Example fix for register in AuthContext.js
 const register = async (userData) => {
