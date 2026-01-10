@@ -1,31 +1,40 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+import os
 import random
 import requests
 from datetime import datetime
+from contextlib import asynccontextmanager
 
-# Modular Imports
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+
+# --- DATABASE SETUP ---
 from app.db.database import engine, get_db, Base
 from app.db.models import User, SOS
 from app.schemas.schemas import UserCreate, UserResponse, Token, UserLogin, SOSCreate
 from app.core.auth import get_current_active_user, get_password_hash, create_access_token, verify_password
-from app.core.config import settings
 
-# Initialize Database Tables
-Base.metadata.create_all(bind=engine)
+# This ensures tables are created when the app starts up
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Clean up (if needed) on shutdown
 
-app = FastAPI(title="Suraksha API")
+app = FastAPI(title="Suraksha API", lifespan=lifespan)
 
-# Fix 1: Inclusive CORS for Development
-from fastapi.middleware.cors import CORSMiddleware
+# CORS: Allows your Render Frontend URL to communicate with this Backend
+# In server/app/main.py
+
+# In server/app/main.py
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows your Render frontend to talk to your Render backend
+    allow_origins=["*"],  # While testing, allow all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
 # --- WEATHER ROUTE ---
@@ -130,9 +139,16 @@ async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"}
-# In server/app/main.py
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+@app.post("/api/auth/login", response_model=Token)
+async def login(user_data: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == user_data.email).first()
+    if not user or not verify_password(user_data.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
 @app.get("/api/sos/history")
 async def get_sos_history(
     db: Session = Depends(get_db), 

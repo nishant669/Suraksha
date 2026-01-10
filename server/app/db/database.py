@@ -15,7 +15,7 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 engine = create_engine(
     DATABASE_URL,
     poolclass=NullPool,
-    connect_args={"sslmode": "require"}
+    connect_args={"sslmode": "require"} # This matches your Supabase setting
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
