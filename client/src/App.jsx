@@ -702,7 +702,7 @@ const ForgotPasswordPage = ({ onNavigate }) => {
 // ==================== DASHBOARD COMPONENTS ====================
 
 // ==================== WEATHER WIDGET ====================
-const WeatherWidget = ({ weatherData }) => {
+const WeatherWidget = ({ weatherData, currentDateTime }) => {
   if (!weatherData) {
     return (
       <Card className="bg-gray-800 border-gray-700 p-8 h-full flex flex-col items-center justify-center text-center">
@@ -712,13 +712,27 @@ const WeatherWidget = ({ weatherData }) => {
     );
   }
 
+  // Format: "Jan 10, 2026"
+  const formattedDate = currentDateTime ? currentDateTime.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric'
+  }) : 'Jan 10, 2026';
+
+  // Format: "12:57 PM"
+  const formattedTime = currentDateTime ? currentDateTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }) : '';
+
   return (
     <Card className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-gray-700 p-8 h-full flex flex-col justify-between shadow-2xl backdrop-blur-md">
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-4xl font-black text-white">{weatherData.temp || '22'}°C</h2>
           <p className="text-blue-300 font-bold uppercase tracking-widest mt-1">
-            {weatherData.condition || 'Dense Fog'}
+            {weatherData.condition || 'Clear'}
           </p>
         </div>
         <div className="p-3 bg-blue-500/20 rounded-2xl">
@@ -745,23 +759,34 @@ const WeatherWidget = ({ weatherData }) => {
       
       <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between text-gray-400">
         <span className="text-sm font-bold">Bhopal, MP</span>
-        <span className="text-xs font-mono font-bold">Jan 08, 2026</span>
+        <div className="flex flex-col items-end">
+          <span className="text-xs font-mono font-bold">{formattedDate}</span>
+          <span className="text-[10px] font-mono opacity-70">{formattedTime}</span>
+        </div>
       </div>
     </Card>
   );
 };
 
 // ==================== WEATHER FORECAST SECTION ====================
-const WeatherForecastSection = () => {
-  const forecastData = [
-    { day: "Thu", date: "Jan 8", high: "22°C", low: "4°C", condition: "Fog", icon: <Wind className="w-6 h-6 text-blue-300" /> },
-    { day: "Fri", date: "Jan 9", high: "24°C", low: "6°C", condition: "Hazy", icon: <CloudRain className="w-6 h-6 text-gray-400" /> },
-    { day: "Sat", date: "Jan 10", high: "25°C", low: "8°C", condition: "Sunny", icon: <Sun className="w-6 h-6 text-yellow-500" /> },
-    { day: "Sun", date: "Jan 11", high: "25°C", low: "8°C", condition: "Clear", icon: <Sun className="w-6 h-6 text-yellow-200" /> },
-    { day: "Mon", date: "Jan 12", high: "26°C", low: "9°C", condition: "Sunny", icon: <Sun className="w-6 h-6 text-yellow-400" /> },
-    { day: "Tue", date: "Jan 13", high: "26°C", low: "10°C", condition: "Sunny", icon: <Sun className="w-6 h-6 text-yellow-400" /> },
-    { day: "Wed", date: "Jan 14", high: "27°C", low: "11°C", condition: "Clear", icon: <Sun className="w-6 h-6 text-yellow-300" /> },
-  ];
+const WeatherForecastSection = ({ forecast }) => {
+  // Fallback while data is loading
+  if (!forecast || !forecast.time) {
+    return (
+      <div className="px-6 py-8 text-center text-gray-500 animate-pulse">
+        Syncing 7-day outlook...
+      </div>
+    );
+  }
+
+  // Map WMO Weather Codes to Lucide Icons
+  const getWeatherIcon = (code) => {
+    if (code === 0) return <Sun className="w-6 h-6 text-yellow-400" />;
+    if (code <= 3) return <Cloud className="w-6 h-6 text-blue-300" />;
+    if (code >= 45 && code <= 48) return <Wind className="w-6 h-6 text-gray-400" />;
+    if (code >= 51 && code <= 67) return <CloudRain className="w-6 h-6 text-blue-500" />;
+    return <CloudRain className="w-6 h-6 text-purple-400" />;
+  };
 
   return (
     <div className="px-6 py-8 space-y-6">
@@ -773,22 +798,37 @@ const WeatherForecastSection = () => {
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
-        {forecastData.map((item, index) => (
-          <div key={index} className="bg-gray-800/40 rounded-2xl p-4 border border-gray-700 hover:border-blue-500 transition-all group text-center">
-            <p className="text-blue-400 font-black text-xs uppercase mb-1">{item.day}</p>
-            <p className="text-gray-500 text-[10px] mb-3 font-bold">{item.date}</p>
-            <div className="flex justify-center mb-3 group-hover:scale-110 transition-transform">
-                {item.icon}
+        {forecast.time.map((dateStr, index) => {
+          const dateObj = new Date(dateStr);
+          // Check if this iteration is for "Today"
+          const isToday = index === 0;
+
+          return (
+            <div key={index} className={`rounded-2xl p-4 border transition-all group text-center ${
+              isToday ? 'bg-blue-600/20 border-blue-500/50 shadow-lg' : 'bg-gray-800/40 border-gray-700 hover:border-blue-500'
+            }`}>
+              <p className={`font-black text-xs uppercase mb-1 ${isToday ? 'text-white' : 'text-blue-400'}`}>
+                {isToday ? "Today" : dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+              </p>
+              <p className="text-gray-500 text-[10px] mb-3 font-bold">
+                {dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </p>
+              <div className="flex justify-center mb-3 group-hover:scale-110 transition-transform">
+                  {getWeatherIcon(forecast.weather_code[index])}
+              </div>
+              <div className="text-sm font-black text-white">
+                {Math.round(forecast.temperature_2m_max[index])}°C
+              </div>
+              <div className="text-[10px] text-gray-500 font-bold">
+                {Math.round(forecast.temperature_2m_min[index])}°C
+              </div>
             </div>
-            <div className="text-sm font-black text-white">{item.high}</div>
-            <div className="text-[10px] text-gray-500 font-bold">{item.low}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 };
-
 // ==================== ACTIVE ALERTS COMPONENT (ROW-WISE) ====================
 const ActiveAlertsSection = () => {
   const alerts = [
@@ -853,25 +893,25 @@ const ActiveAlertsSection = () => {
 };
 
 // ==================== MAIN DASHBOARD PAGE ====================
-const DashboardPage = ({ weatherData }) => {
+const DashboardPage = ({ weatherData, currentDateTime }) => {
   const [sosActive, setSosActive] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(5);
 
+  // SOS Countdown Logic
   useEffect(() => {
     let timer;
     if (sosActive && sosCountdown > 0) {
       timer = setTimeout(() => setSosCountdown(sosCountdown - 1), 1000);
-    } else if (sosActive && sosCountdown === 0) {
+    } else if (sosCountdown === 0) {
+      // In a real app, this is where the SOS API call is confirmed
       setSosActive(false);
       setSosCountdown(5);
-      alert("SOS Dispatched! Authorities have been notified with your GPS coordinates.");
     }
     return () => clearTimeout(timer);
   }, [sosActive, sosCountdown]);
 
   return (
     <div className="p-6 lg:p-8 space-y-8 animate-fade-in bg-[#020617] min-h-screen">
-      
       {/* ROW 1: EMERGENCY & CURRENT WEATHER */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
         
@@ -907,20 +947,19 @@ const DashboardPage = ({ weatherData }) => {
 
         {/* CURRENT WEATHER WIDGET */}
         <div className="flex flex-col h-full">
-           <WeatherWidget weatherData={weatherData} />
+           <WeatherWidget weatherData={weatherData} currentDateTime={currentDateTime} />
         </div>
       </div>
 
       {/* ROW 2: 7-DAY WEATHER FORECAST */}
       <div className="w-full bg-gray-900/40 rounded-3xl border border-gray-800 shadow-xl">
-         <WeatherForecastSection />
+         <WeatherForecastSection forecast={weatherData?.daily} />
       </div>
 
-      {/* ROW 3: LIVE SYSTEM ALERTS (ROW-WISE) */}
+      {/* ROW 3: LIVE SYSTEM ALERTS */}
       <div className="w-full bg-gray-900/60 rounded-3xl border border-red-900/20 shadow-2xl overflow-hidden">
          <ActiveAlertsSection />
       </div>
-      
     </div>
   );
 };
@@ -2459,55 +2498,51 @@ const PrivacyPage = () => (
 );
 
 // ==================== MAIN APP ====================
+// ==================== MAIN APP ====================
 const App = () => {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [weather, setWeather] = useState(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
+  // Fix 1: Digital Clock (Syncs every second)
   useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(clockInterval); // Fixed reference
+  }, []);
+
+  // Fix 2: Weather Fetching (GPS + 30-min refresh)
+  useEffect(() => {
+    let weatherTimer;
     if (user) {
       const fetchWeather = async () => {
         try {
-          // Fetches real data from your backend route
-          const data = await getWeather(23.25, 77.41);
-          setWeather(data);
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
+            setWeather(data);
+          }, async () => {
+            const data = await getWeather(23.25, 77.41); // Fallback to Bhopal
+            setWeather(data);
+          });
         } catch (err) {
-          console.error("Weather fetch failed", err);
+          console.error("Weather update failed", err);
         }
       };
+
       fetchWeather();
+      weatherTimer = setInterval(fetchWeather, 1800000); // 30 mins
     }
+    return () => { if (weatherTimer) clearInterval(weatherTimer); };
   }, [user]);
 
-  if (loading) return <IntroAnimation fastMode={false} />;
-
-  if (!user) {
-    const authPage = currentPage === 'register' ? 'register' : 
-                     currentPage === 'forgot' ? 'forgot' : 'login';
-    return (
-      <div className="flex min-h-screen w-full bg-gray-900 text-white overflow-hidden">
-        <div className="hidden md:flex md:w-1/2 bg-[#020817] relative items-center justify-center border-r border-gray-700">
-           <IntroAnimation fastMode={true} />
-        </div>
-        <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-gray-900">
-           <div className="w-full max-w-md animate-fade-in">
-             {authPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
-             {authPage === 'register' && <RegisterPage onNavigate={setCurrentPage} />}
-             {authPage === 'forgot' && <ForgotPasswordPage onNavigate={setCurrentPage} />}
-           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- PHASE THREE: Authenticated Dashboard Logic ---
+  // Fix 3: Passing props down to the Dashboard
   const renderPage = () => {
     switch(currentPage) {
       case 'dashboard': 
-        // THIS IS THE LAYOUT YOU REQUESTED: SOS + Weather side-by-side
-        return <DashboardPage weatherData={weather} />;
-      
+        return <DashboardPage weatherData={weather} currentDateTime={currentDateTime} />;
       case 'map': return <MapPage />;
       case 'sos': return <SOSPage />;
       case 'services': return <ServicesPage />;
@@ -2520,9 +2555,11 @@ const App = () => {
       case 'support': return <SupportPage />;
       case 'privacy': return <PrivacyPage />;
       case 'terms': return <TermsPage />;
-      default: return <DashboardPage weatherData={weather} />;
+      default: return <DashboardPage weatherData={weather} currentDateTime={currentDateTime} />;
     }
   };
+
+  // ... (Rest of your Header/Sidebar rendering code remains the same)
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

@@ -3,33 +3,71 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import random
 import requests
+from datetime import datetime
+
 # Modular Imports
 from app.db.database import engine, get_db, Base
 from app.db.models import User, SOS
-from app.schemas.schemas import UserCreate, UserResponse, Token, UserLogin, SOSCreate, VerifyOTP
+from app.schemas.schemas import UserCreate, UserResponse, Token, UserLogin, SOSCreate
 from app.core.auth import get_current_active_user, get_password_hash, create_access_token, verify_password
 from app.core.config import settings
 
+# Initialize Database Tables
 Base.metadata.create_all(bind=engine)
+
 app = FastAPI(title="Suraksha API")
 
-@app.get("/api/weather")
-async def get_weather(lat: float, lon: float):
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto"
-    try:
-        response = requests.get(url)
-        return response.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-# Initialize Database Tables
 # Fix 1: Inclusive CORS for Development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows both localhost and 127.0.0.1
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- WEATHER ROUTE ---
+
+@app.get("/api/weather")
+async def get_weather(lat: float, lon: float):
+    # We include both 'current' for the main widget and 'daily' for the 7-day outlook
+    url = (
+        f"https://api.open-meteo.com/v1/forecast?"
+        f"latitude={lat}&longitude={lon}&"
+        f"current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&"
+        f"daily=weather_code,temperature_2m_max,temperature_2m_min&"
+        f"timezone=auto"
+    )
+    
+    # Mapping WMO weather codes to readable conditions for the Frontend
+    weather_codes = {
+        0: "Clear Sky",
+        1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+        45: "Foggy", 48: "Depositing Rime Fog",
+        51: "Drizzle", 61: "Slight Rain", 71: "Slight Snow",
+        95: "Thunderstorm"
+    }
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+        
+        current = data.get("current", {})
+        
+        # We return a structured object that the React Frontend expects
+        return {
+            "temp": current.get("temperature_2m"),
+            "humidity": current.get("relative_humidity_2m"),
+            "wind": current.get("wind_speed_10m"),
+            "condition": weather_codes.get(current.get("weather_code"), "Cloudy"),
+            # server_time helps sync the frontend clock
+            "server_time": datetime.now().isoformat(),
+            # daily provides the data for the 7-Day Outlook component
+            "daily": data.get("daily") 
+        }
+    except Exception as e:
+        print(f"Weather API Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch weather data from provider")
 
 # --- AUTHENTICATION ROUTES ---
 
@@ -65,7 +103,6 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
 # --- USER ROUTES ---
 
-# Fix 2: Added the Profile route that the Frontend needs
 @app.get("/api/user/profile", response_model=UserResponse)
 async def get_profile(current_user: User = Depends(get_current_active_user)):
     return current_user
@@ -74,7 +111,7 @@ async def get_profile(current_user: User = Depends(get_current_active_user)):
 
 @app.post("/api/sos/create")
 async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    # NEW LOGIC: Log the emergency to the terminal for now
+    # Log the emergency to the terminal
     print(f"🚨 EMERGENCY ALERT from {current_user.name} ({current_user.phone})")
     print(f"📍 Location: {sos.latitude}, {sos.longitude}")
     
