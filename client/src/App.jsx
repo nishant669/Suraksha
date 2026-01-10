@@ -2573,24 +2573,37 @@ const App = () => {
     if (user) {
       // PRIORITY 1: Weather (Trigger GPS immediately)
       const fetchWeather = async () => {
-        if (!navigator.geolocation) return;
+  if (!navigator.geolocation) {
+    console.warn("Geolocation not supported by browser");
+    const fallback = await getWeather(23.25, 77.41);
+    setWeather(fallback);
+    return;
+  }
 
-        navigator.geolocation.getCurrentPosition(
-          async (pos) => {
-            try {
-              const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
-              setWeather(data);
-            } catch (err) { console.error("Weather error", err); }
-          },
-          async () => {
-            // Fallback to default (Bhopal) if GPS is denied or slow
-            const data = await getWeather(23.25, 77.41); 
-            setWeather(data);
-          },
-          { timeout: 5000, enableHighAccuracy: false } // Fast response over pinpoint accuracy
-        );
-      };
+  console.log("📍 Requesting GPS location for weather...");
 
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      console.log("✅ GPS success:", pos.coords.latitude, pos.coords.longitude);
+      try {
+        const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
+        setWeather(data);
+      } catch (err) {
+        console.error("❌ Weather API error:", err);
+      }
+    },
+    async (error) => {
+      console.warn("⚠️ GPS error/denied:", error.message);
+      // Immediate fallback so the UI doesn't hang
+      const data = await getWeather(23.25, 77.41); 
+      setWeather(data);
+    },
+    { 
+      timeout: 5000,           // Force failure after 5 seconds
+      enableHighAccuracy: false // Uses Wi-Fi/Cell towers (much faster than GPS satellites)
+    }
+  );
+};
       // PRIORITY 2: SOS History (Non-blocking)
       const fetchHistory = async () => {
         try {

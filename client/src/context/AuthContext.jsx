@@ -1,59 +1,75 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-// Import your api service functions
 import * as api from '../services/api';
 
 const AuthContext = createContext();
 
-// EXPORT 1: The custom hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
 
-// EXPORT 2: The provider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Initial Load Effect
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Failed to parse saved user", e);
+      }
     }
     setLoading(false);
   }, []);
 
+  // 2. Auth Functions (Defined before they are used in the return)
   const login = async (email, password) => {
+    console.log("Attempting login for:", email);
     try {
-        const data = await api.loginUser({ email, password });
-        // data contains { access_token: "...", token_type: "bearer" }
-        localStorage.setItem('token', data.access_token);
+      const data = await api.loginUser({ email, password }); 
+      console.log("Login success, token received");
+      
+      // 1. Save Token First
+      localStorage.setItem('token', data.access_token);
 
-        // Fetch the profile using the new token
-        const response = await fetch("http://127.0.0.1:8000/api/user/profile", {
-            headers: { 
-                'Authorization': `Bearer ${data.access_token}` 
-            }
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch user profile");
-
-        const userData = await response.json();
+      // 2. Fetch Profile (Wrap in try/catch so login doesn't fully fail if profile fails)
+      try {
+        const userData = await api.getUserProfile(); 
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
-        return { success: true };
+      } catch (profileError) {
+        console.error("Profile fetch failed, using fallback:", profileError);
+        // Fallback: Create a basic user object from the email if profile fails
+        const fallbackUser = { email: email, name: email.split('@')[0] };
+        setUser(fallbackUser);
+        localStorage.setItem('user', JSON.stringify(fallbackUser));
+      }
+      
+      return { success: true };
     } catch (error) {
-        return { success: false, message: error.message };
+      console.error("LOGIN ERROR:", error);
+      return { success: false, message: error.message };
     }
-};
+  };
+
   const register = async (userData) => {
     try {
       await api.registerUser(userData);
-      return { success: true, requiresOtp: true };
+      return { success: true }; // Simplified as you aborted OTP
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const verifyAccount = async (email, otp) => {
+    try {
+      await api.verifyAccount(email, otp);
+      return { success: true };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -65,8 +81,9 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // 3. Single Return Statement at the end
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, verifyAccount, loading }}>
       {children}
     </AuthContext.Provider>
   );

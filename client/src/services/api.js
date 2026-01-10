@@ -1,5 +1,19 @@
 // client/src/services/api.js
-const API_URL = "http://127.0.0.1:8000/api";
+// Detect the correct API URL based on environment (Vite or CRA)
+// client/src/services/api.js
+
+// Vite uses import.meta.env instead of process.env
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+  };
+};
+
+// ... rest of your file
 
 export const registerUser = async (userData) => {
   const response = await fetch(`${API_URL}/auth/register`, {
@@ -13,21 +27,32 @@ export const registerUser = async (userData) => {
 };
 
 export const loginUser = async (credentials) => {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(credentials), // Clean credentials (email/password)
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.detail || "Login failed");
-  return data;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+      signal: controller.signal, // Connect the timeout signal
+    });
+    clearTimeout(id);
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Login failed");
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error("Server took too long to respond.");
+    throw error;
+  }
 };
 
-export const verifyAccount = async (otpData) => {
+export const verifyAccount = async (email, otp) => {
   const response = await fetch(`${API_URL}/auth/verify-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(otpData),
+    body: JSON.stringify({ email, otp }),
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.detail || "Verification failed");
@@ -35,19 +60,23 @@ export const verifyAccount = async (otpData) => {
 };
 
 export const getWeather = async (lat, lon) => {
-  const response = await fetch(`http://127.0.0.1:8000/api/weather?lat=${lat}&lon=${lon}`);
+  const response = await fetch(`${API_URL}/weather?lat=${lat}&lon=${lon}`);
   if (!response.ok) throw new Error("Weather service unavailable");
   return await response.json();
 };
-// In client/src/services/api.js
 
 export const getSOSHistory = async () => {
-  const token = localStorage.getItem('token');
   const response = await fetch(`${API_URL}/sos/history`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error("Failed to fetch SOS history");
+  return await response.json();
+};
+
+export const getUserProfile = async () => {
+  const response = await fetch(`${API_URL}/user/profile`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to fetch profile");
   return await response.json();
 };
