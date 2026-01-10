@@ -1292,7 +1292,7 @@ const SOSPage = () => {
           const token = localStorage.getItem('token');
           
           // 👇👇👇 UPDATE THIS URL 👇👇👇
-          const response = await fetch("http://127.0.0.1:8000/api/sos/create", {
+          const response = await fetch("https://suraksha-a74u.onrender.com/api/sos/create", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

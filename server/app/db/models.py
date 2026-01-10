@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean # Added Boolean
 from sqlalchemy.sql import func
 from app.db.database import Base
+# Change this line in models.py
 
 class User(Base):
     __tablename__ = "users"
@@ -10,7 +11,7 @@ class User(Base):
     phone = Column(String, nullable=True) 
     password = Column(String, nullable=False)
     type = Column(String, default="tourist")
-    is_verified = Column(Boolean, default=True) # Now works because of import
+    is_verified = Column(Boolean, default=True) # Now this works
 
 class SOS(Base):
     __tablename__ = "sos_alerts"
@@ -19,5 +20,5 @@ class SOS(Base):
     latitude = Column(Float)
     longitude = Column(Float)
     message = Column(String)
-    notified_contacts = Column(String, nullable=True) # Added to match main.py
+    notified_contacts = Column(String, nullable=True) # Added to match main.py logic
     created_at = Column(DateTime(timezone=True), server_default=func.now())

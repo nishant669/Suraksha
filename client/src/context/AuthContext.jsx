@@ -57,10 +57,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (userData) => {
+  // Example fix for register in AuthContext.js
+const register = async (userData) => {
   try {
     const response = await api.registerUser(userData);
-    // If your backend returns the user directly, response will be the user object
+    
+    // Safety check: ensure response exists before accessing properties
+    if (!response) {
+      throw new Error("No response from server");
+    }
+
+    // Do NOT use response.payload unless your backend explicitly sends a 'payload' key
     return { success: true, data: response }; 
   } catch (error) {
     console.error("Registration error:", error);
