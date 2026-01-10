@@ -31,7 +31,7 @@ app = FastAPI(title="Suraksha API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # While testing, allow all origins
+    allow_origins=["*"], # For production, use ["https://suraksha-frontened-org.onrender.com"]
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Accept"],
