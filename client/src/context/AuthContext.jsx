@@ -32,34 +32,46 @@ export const AuthProvider = ({ children }) => {
   try {
     const data = await api.loginUser({ email, password }); 
     
-    // The backend returns { "access_token": "...", "token_type": "bearer" }
     if (data && data.access_token) {
+      // 1. Store token
       localStorage.setItem('token', data.access_token);
       
-      // Fetch the actual user data
-      const userData = await api.getUserProfile(); 
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+      // 2. Immediately set a temporary user state to unlock the UI
+      const tempUser = { email, name: email.split('@')[0] };
+      setUser(tempUser);
+
+      // 3. Try to get full profile in the background
+      try {
+        const userData = await api.getUserProfile(); 
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch (e) {
+        console.warn("Profile fetch failed, staying with temp user data.");
+        localStorage.setItem('user', JSON.stringify(tempUser));
+      }
+      
       return { success: true };
     }
+    return { success: false, message: "Invalid server response" };
   } catch (error) {
+    // This catches the 500 errors and the "Failed to fetch" (CORS) errors
+    const errorMsg = error.message.includes("Failed to fetch") 
+      ? "Server Connection Error (CORS or Crash)" 
+      : error.message;
+    
     console.error("Detailed Login Error:", error);
-    return { success: false, message: error.message };
+    return { success: false, message: errorMsg };
   }
 };
-
   // Example fix for register in AuthContext.js
 const register = async (userData) => {
   try {
     const response = await api.registerUser(userData);
     
-    // Safety check: ensure response exists before accessing properties
-    if (!response) {
-      throw new Error("No response from server");
+    // CHANGE THIS: Don't look for .payload, just return success
+    if (response) {
+      return { success: true, data: response }; 
     }
-
-    // Do NOT use response.payload unless your backend explicitly sends a 'payload' key
-    return { success: true, data: response }; 
   } catch (error) {
     console.error("Registration error:", error);
     return { success: false, message: error.message };
