@@ -5,8 +5,12 @@ from app.db.database import Base
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    password = Column(String)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    phone = Column(String, nullable=True) # Matches the 'phone' in your form
+    password = Column(String, nullable=False)
+    type = Column(String, default="tourist")
+    is_verified = Column(Boolean, default=True) # Note: Import Boolean from sqlalchemy
     # ... rest of your user columns
 
 # ADD THIS CLASS: Ensure it is named exactly 'SOS'

@@ -563,12 +563,10 @@ const RegisterPage = ({ onNavigate }) => {
     const result = await register(payload);
     
     setIsLoading(false);
-    if (result.success && result.requiresOtp) {
-      setStep(2); // Move to OTP screen
-      setToast({ message: 'OTP sent to your email!', type: 'success' });
-    } else {
-      setToast({ message: result.message, type: 'error' });
-    }
+    if (result.success) {
+  setToast({ message: 'Registration successful! Please login.', type: 'success' });
+  setTimeout(() => onNavigate('login'), 2000);
+}
   };
 
   // Handle OTP Verification

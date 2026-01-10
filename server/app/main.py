@@ -141,14 +141,6 @@ async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-@app.post("/api/auth/login", response_model=Token)
-async def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_data.email).first()
-    if not user or not verify_password(user_data.password, user.password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
 @app.get("/api/sos/history")
 async def get_sos_history(
     db: Session = Depends(get_db), 
