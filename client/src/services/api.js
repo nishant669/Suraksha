@@ -39,3 +39,15 @@ export const getWeather = async (lat, lon) => {
   if (!response.ok) throw new Error("Weather service unavailable");
   return await response.json();
 };
+// In client/src/services/api.js
+
+export const getSOSHistory = async () => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_URL}/sos/history`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) throw new Error("Failed to fetch SOS history");
+  return await response.json();
+};

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # MUST match the .env key exactly
 
     # Database
-    DATABASE_URL: str = "sqlite:///./suraksha.db"
+    DATABASE_URL: str = "mysql+pymysql://root:@localhost/suraksha_db"
     
     # Email / SMTP
     SMTP_HOST: str = "smtp.gmail.com"

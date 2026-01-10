@@ -129,3 +129,13 @@ async def create_sos(sos: SOSCreate, db: Session = Depends(get_db), current_user
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy"}
+# In server/app/main.py
+
+@app.get("/api/sos/history")
+async def get_sos_history(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
+    # This fetches only the alerts belonging to the logged-in user
+    alerts = db.query(SOS).filter(SOS.user_id == current_user.id).order_by(SOS.created_at.desc()).all()
+    return alerts

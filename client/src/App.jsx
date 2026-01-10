@@ -3,20 +3,21 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Optimized single import for all icons
+// 1. COMBINED API IMPORT (Fixes the declared error)
+import { getWeather, getSOSHistory } from './services/api';
+import { useAuth } from './context/AuthContext'; 
+
+// 2. COMBINED ICON IMPORT
 import { 
   Cloud, Sun, CloudRain, Shield, Menu, X, MapPin, Phone, Users, 
   MessageSquare, Map as MapIcon, User, Home, Info, Mail, HelpCircle, 
   AlertTriangle, Bell, LogOut, Activity, Send, Download, CheckCircle, 
   Navigation, Clock, Star, Check, Search, Filter, ChevronRight, 
   Settings, FileText, Lock, Calendar, 
-  Thermometer, Wind, Droplets // Add these three
+  Thermometer, Wind, Droplets 
 } from 'lucide-react';
 
 // Services
-import { getWeather } from './services/api'; 
-import { useAuth } from './context/AuthContext'; 
-
 // Assets
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -891,19 +892,57 @@ const ActiveAlertsSection = () => {
     </div>
   );
 };
-
+// ==================== RECENT ACTIVITY SECTION ====================
+const RecentActivitySection = ({ sosHistory = [] }) => {
+  return (
+    <div className="p-6 space-y-4">
+      <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+        <Activity className="w-6 h-6 text-blue-500" />
+        Recent SOS Activity
+      </h2>
+      
+      <div className="space-y-3">
+        {sosHistory && sosHistory.length > 0 ? (
+          sosHistory.map((log) => (
+            <Card key={log.id} className="p-4 bg-gray-800/50 border-gray-700 flex justify-between items-center transition-all hover:bg-gray-800">
+              <div>
+                <p className="text-white font-bold">{log.message || "Emergency Alert"}</p>
+                <p className="text-xs text-gray-400 font-mono">
+                  {new Date(log.created_at).toLocaleString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className={`text-[10px] px-2 py-1 rounded-full uppercase font-bold flex items-center gap-1 ${
+                  log.status === 'active' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                }`}>
+                  {log.status === 'active' && <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />}
+                  {log.status}
+                </span>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <p className="text-gray-500 text-sm italic">No recent alerts found in database.</p>
+        )}
+      </div>
+    </div>
+  );
+};
 // ==================== MAIN DASHBOARD PAGE ====================
-const DashboardPage = ({ weatherData, currentDateTime }) => {
+
+  // ==================== DASHBOARD COMPONENTS ===================
+
+
+// 2. MAIN DASHBOARD PAGE
+const DashboardPage = ({ weatherData, currentDateTime, sosHistory }) => {
   const [sosActive, setSosActive] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(5);
 
-  // SOS Countdown Logic
   useEffect(() => {
     let timer;
     if (sosActive && sosCountdown > 0) {
       timer = setTimeout(() => setSosCountdown(sosCountdown - 1), 1000);
     } else if (sosCountdown === 0) {
-      // In a real app, this is where the SOS API call is confirmed
       setSosActive(false);
       setSosCountdown(5);
     }
@@ -912,20 +951,16 @@ const DashboardPage = ({ weatherData, currentDateTime }) => {
 
   return (
     <div className="p-6 lg:p-8 space-y-8 animate-fade-in bg-[#020617] min-h-screen">
-      {/* ROW 1: EMERGENCY & CURRENT WEATHER */}
+      
+      {/* ROW 1: SOS & WEATHER */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-        
-        {/* EMERGENCY COMMAND CENTER */}
         <Card className="bg-gray-900/60 border-gray-800 p-8 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
           <h2 className="text-2xl font-black text-white mb-8 uppercase tracking-widest italic">Command Center</h2>
-          
           <button
             onClick={() => setSosActive(true)}
             className={`w-52 h-52 rounded-full shadow-2xl transition-all duration-500 flex items-center justify-center group ${
-              sosActive 
-                ? 'bg-red-600 scale-90 ring-8 ring-red-900/50' 
-                : 'bg-gradient-to-br from-red-600 to-pink-700 hover:scale-105'
+              sosActive ? 'bg-red-600 scale-90 ring-8 ring-red-900/50' : 'bg-gradient-to-br from-red-600 to-pink-700 hover:scale-105'
             }`}
           >
             <div className="text-center">
@@ -939,24 +974,27 @@ const DashboardPage = ({ weatherData, currentDateTime }) => {
               )}
             </div>
           </button>
-          
           <p className="text-red-500 mt-8 font-black text-xs uppercase tracking-tighter animate-pulse text-center">
             {sosActive ? "Transmitting GPS..." : "Tap for immediate emergency assistance"}
           </p>
         </Card>
 
-        {/* CURRENT WEATHER WIDGET */}
         <div className="flex flex-col h-full">
            <WeatherWidget weatherData={weatherData} currentDateTime={currentDateTime} />
         </div>
       </div>
 
-      {/* ROW 2: 7-DAY WEATHER FORECAST */}
+      {/* ROW 2: 7-DAY FORECAST */}
       <div className="w-full bg-gray-900/40 rounded-3xl border border-gray-800 shadow-xl">
          <WeatherForecastSection forecast={weatherData?.daily} />
       </div>
 
-      {/* ROW 3: LIVE SYSTEM ALERTS */}
+      {/* ROW 3: SOS HISTORY (DATA FROM YOUR MYSQL) */}
+      <div className="w-full bg-gray-900/60 rounded-3xl border border-blue-900/20 shadow-2xl overflow-hidden">
+         <RecentActivitySection sosHistory={sosHistory} />
+      </div>
+
+      {/* ROW 4: ALERTS */}
       <div className="w-full bg-gray-900/60 rounded-3xl border border-red-900/20 shadow-2xl overflow-hidden">
          <ActiveAlertsSection />
       </div>
@@ -1173,7 +1211,23 @@ const MapPage = () => {
 
 // ==================== SOS PAGE ====================
 // App.jsx - REPLACED SOSPage Component
+// Add a function to create an alert
+const handleTriggerSOS = async () => {
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    await createSOS({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      message: "Emergency triggered from Dashboard",
+      contacts: [] 
+    });
+    // Refresh history after sending
+    const newHistory = await getSOSHistory();
+    setSosHistory(newHistory);
+  });
+};
 
+// Pass it to DashboardPage
+<DashboardPage onTriggerSOS={handleTriggerSOS} />
 const SOSPage = () => {
   const { user } = useAuth();
   const [isActivated, setIsActivated] = useState(false);
@@ -2498,51 +2552,99 @@ const PrivacyPage = () => (
 );
 
 // ==================== MAIN APP ====================
-// ==================== MAIN APP ====================
 const App = () => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Global Data States
   const [weather, setWeather] = useState(null);
+  const [sosHistory, setSosHistory] = useState([]);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
-  // Fix 1: Digital Clock (Syncs every second)
+  // 1. Instant Clock: Updates every second
   useEffect(() => {
-    const clockInterval = setInterval(() => {
-      setCurrentDateTime(new Date());
-    }, 1000);
-    return () => clearInterval(clockInterval); // Fixed reference
+    const clockInterval = setInterval(() => setCurrentDateTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
   }, []);
 
-  // Fix 2: Weather Fetching (GPS + 30-min refresh)
+  // 2. High-Priority Data Fetching
   useEffect(() => {
-    let weatherTimer;
     if (user) {
+      // PRIORITY 1: Weather (Trigger GPS immediately)
       const fetchWeather = async () => {
+        if (!navigator.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
+              setWeather(data);
+            } catch (err) { console.error("Weather error", err); }
+          },
+          async () => {
+            // Fallback to default (Bhopal) if GPS is denied or slow
+            const data = await getWeather(23.25, 77.41); 
+            setWeather(data);
+          },
+          { timeout: 5000, enableHighAccuracy: false } // Fast response over pinpoint accuracy
+        );
+      };
+
+      // PRIORITY 2: SOS History (Non-blocking)
+      const fetchHistory = async () => {
         try {
-          navigator.geolocation.getCurrentPosition(async (pos) => {
-            const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
-            setWeather(data);
-          }, async () => {
-            const data = await getWeather(23.25, 77.41); // Fallback to Bhopal
-            setWeather(data);
-          });
-        } catch (err) {
-          console.error("Weather update failed", err);
-        }
+          const data = await getSOSHistory();
+          setSosHistory(data || []);
+        } catch (err) { console.error("History error", err); }
       };
 
       fetchWeather();
-      weatherTimer = setInterval(fetchWeather, 1800000); // 30 mins
+      fetchHistory(); // Fires in parallel
     }
-    return () => { if (weatherTimer) clearInterval(weatherTimer); };
   }, [user]);
 
-  // Fix 3: Passing props down to the Dashboard
+  // 1. PHASE ONE: Full Screen Loading Animation
+  if (authLoading) {
+    return <IntroAnimation fastMode={false} />;
+  }
+
+  // 2. PHASE TWO: Split Screen (Guest Experience)
+  if (!user) {
+    const authPage = currentPage === 'register' ? 'register' : 
+                     currentPage === 'forgot' ? 'forgot' : 'login';
+    
+    return (
+      <div className="flex min-h-screen w-full bg-[#020817] text-white overflow-hidden">
+        <style>{`
+          html, body, #root { background-color: #020817; color: white; margin: 0; padding: 0; }
+          .scrollbar-none::-webkit-scrollbar { display: none; }
+        `}</style>
+        <div className="hidden md:flex md:w-1/2 bg-[#020817] relative items-center justify-center overflow-hidden border-r border-gray-700">
+           <IntroAnimation fastMode={true} />
+        </div>
+        <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-gray-900">
+           <div className="w-full max-w-md animate-fade-in">
+             {authPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
+             {authPage === 'register' && <RegisterPage onNavigate={setCurrentPage} />}
+             {authPage === 'forgot' && <ForgotPasswordPage onNavigate={setCurrentPage} />}
+           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. PHASE THREE: Dashboard Logic (Injected with fetched data)
   const renderPage = () => {
+    // Props passed down to components so they don't have to fetch themselves
+    const dashboardProps = { 
+      weatherData: weather, 
+      currentDateTime, 
+      sosHistory 
+    };
+
     switch(currentPage) {
-      case 'dashboard': 
-        return <DashboardPage weatherData={weather} currentDateTime={currentDateTime} />;
+      case 'dashboard': return <DashboardPage {...dashboardProps} />;
       case 'map': return <MapPage />;
       case 'sos': return <SOSPage />;
       case 'services': return <ServicesPage />;
@@ -2555,16 +2657,16 @@ const App = () => {
       case 'support': return <SupportPage />;
       case 'privacy': return <PrivacyPage />;
       case 'terms': return <TermsPage />;
-      default: return <DashboardPage weatherData={weather} currentDateTime={currentDateTime} />;
+      default: return <DashboardPage {...dashboardProps} />;
     }
   };
 
-  // ... (Rest of your Header/Sidebar rendering code remains the same)
-
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <style>{`
+          html, body, #root { background-color: #111827; color: white; }
+      `}</style>
       <Header onMenuClick={() => setSidebarOpen(true)} />
-      
       <div className="flex w-full fixed top-[73px] bottom-0"> 
         <Sidebar 
           isOpen={sidebarOpen} 
@@ -2572,9 +2674,7 @@ const App = () => {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
         />
-        
         <main className="flex-1 overflow-y-auto bg-gray-900 pb-20 w-full scrollbar-none">
-          {/* This executes the switch logic above */}
           {renderPage()}
         </main>
       </div>
