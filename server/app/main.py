@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # Your frontend URL
+    allow_origins=["*"],  # Allows your Render frontend to talk to your Render backend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
