@@ -58,13 +58,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    try {
-      await api.registerUser(userData);
-      return { success: true }; // Simplified as you aborted OTP
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  };
+  try {
+    const response = await api.registerUser(userData);
+    // If your backend returns the user directly, response will be the user object
+    return { success: true, data: response }; 
+  } catch (error) {
+    console.error("Registration error:", error);
+    return { success: false, message: error.message };
+  }
+};
 
   const verifyAccount = async (email, otp) => {
     try {

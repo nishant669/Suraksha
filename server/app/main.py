@@ -149,3 +149,6 @@ async def get_sos_history(
     # This fetches only the alerts belonging to the logged-in user
     alerts = db.query(SOS).filter(SOS.user_id == current_user.id).order_by(SOS.created_at.desc()).all()
     return alerts
+@app.get("/")
+async def root():
+    return {"message": "Suraksha API is active", "docs": "/docs"}

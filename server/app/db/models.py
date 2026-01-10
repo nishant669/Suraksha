@@ -10,7 +10,8 @@ class User(Base):
     phone = Column(String, nullable=True) 
     password = Column(String, nullable=False)
     type = Column(String, default="tourist")
-    is_verified = Column(Boolean, default=True) # Now Boolean is imported
+    is_verified = Column(Boolean, default=True) # Now works because of import
+
 class SOS(Base):
     __tablename__ = "sos_alerts"
     id = Column(Integer, primary_key=True, index=True)
@@ -18,5 +19,5 @@ class SOS(Base):
     latitude = Column(Float)
     longitude = Column(Float)
     message = Column(String)
-    notified_contacts = Column(String) # Add this to match main.py
+    notified_contacts = Column(String, nullable=True) # Added to match main.py
     created_at = Column(DateTime(timezone=True), server_default=func.now())
