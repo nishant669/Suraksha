@@ -33,34 +33,24 @@ export const AuthProvider = ({ children }) => {
     const data = await api.loginUser({ email, password }); 
     
     if (data && data.access_token) {
-      // 1. Store token
       localStorage.setItem('token', data.access_token);
       
-      // 2. Immediately set a temporary user state to unlock the UI
-      const tempUser = { email, name: email.split('@')[0] };
-      setUser(tempUser);
+      // 1. Create a quick local user object
+      const sessionUser = { 
+        email: email, 
+        name: email.split('@')[0],
+        type: 'tourist' 
+      };
 
-      // 3. Try to get full profile in the background
-      try {
-        const userData = await api.getUserProfile(); 
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-      } catch (e) {
-        console.warn("Profile fetch failed, staying with temp user data.");
-        localStorage.setItem('user', JSON.stringify(tempUser));
-      }
+      // 2. Set state immediately (This triggers the Dashboard view)
+      setUser(sessionUser); 
+      localStorage.setItem('user', JSON.stringify(sessionUser));
       
       return { success: true };
     }
-    return { success: false, message: "Invalid server response" };
   } catch (error) {
-    // This catches the 500 errors and the "Failed to fetch" (CORS) errors
-    const errorMsg = error.message.includes("Failed to fetch") 
-      ? "Server Connection Error (CORS or Crash)" 
-      : error.message;
-    
     console.error("Detailed Login Error:", error);
-    return { success: false, message: errorMsg };
+    return { success: false, message: error.message };
   }
 };
   // Example fix for register in AuthContext.js
