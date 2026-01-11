@@ -39,9 +39,15 @@ app = FastAPI(title="Suraksha API", lifespan=lifespan)
 # server/app/main.py
 
 
+# server/app/main.py
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], 
+    # 🟢 Yahan apne FRONTEND ka Render URL add karein
+    allow_origins=[
+        "http://localhost:5173", 
+        "https://suraksha-frontened-org.onrender.com"
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

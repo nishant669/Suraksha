@@ -1,14 +1,8 @@
 // client/src/services/api.js
-// Detect the correct API URL based on environment (Vite or CRA)
-// client/src/services/api.js
 
-// Vite uses import.meta.env instead of process.env
-// Hardcode the production URL to be 100% sure while debugging
-// services/api.js
-// services/api.js mein is line ko check karein
-// services/api.js
-// Render ka URL hata kar localhost ka URL dalein
-const API_URL = 'http://localhost:8000/api'; 
+// 🟢 CRITICAL CHANGE: Use Render Backend URL for Production
+// Localhost hata diya hai, ab ye seedha Cloud se connect karega.
+const API_URL = 'https://suraksha-a74u.onrender.com/api';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -17,10 +11,6 @@ const getAuthHeaders = () => {
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
   };
 };
-
-// ... baaki poora code same rahega
-
-// ... rest of your file
 
 export const registerUser = async (userData) => {
   const response = await fetch(`${API_URL}/auth/register`, {
@@ -35,8 +25,7 @@ export const registerUser = async (userData) => {
 
 export const loginUser = async (credentials) => {
   const controller = new AbortController();
-  // 8000 (8s) ko badal kar 30000 (30s) karein
-  const id = setTimeout(() => controller.abort(), 30000); 
+  const id = setTimeout(() => controller.abort(), 30000); // 30s timeout for slow render wake-up
 
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -46,13 +35,12 @@ export const loginUser = async (credentials) => {
       signal: controller.signal,
     });
     clearTimeout(id);
-    // ... rest of the code
     
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Login failed");
     return data;
   } catch (error) {
-    if (error.name === 'AbortError') throw new Error("Server took too long to respond.");
+    if (error.name === 'AbortError') throw new Error("Server sleeping. Try again in 30s.");
     throw error;
   }
 };
@@ -82,6 +70,16 @@ export const getSOSHistory = async () => {
   return await response.json();
 };
 
+export const createSOS = async (sosData) => {
+  const response = await fetch(`${API_URL}/sos/create`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(sosData),
+  });
+  if (!response.ok) throw new Error("Failed to send SOS");
+  return await response.json();
+};
+
 export const getUserProfile = async () => {
   const response = await fetch(`${API_URL}/user/profile`, {
     headers: getAuthHeaders(),
@@ -89,9 +87,14 @@ export const getUserProfile = async () => {
   if (!response.ok) throw new Error("Failed to fetch profile");
   return await response.json();
 };
+
 export const getCountryNumbers = async (countryCode) => {
-  const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
-  const data = await res.json();
-  // Isse hum police/ambulance ke local numbers nikal sakte hain
-  return data[0];
+  try {
+    const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
+    const data = await res.json();
+    return data[0];
+  } catch (e) {
+    console.error("Country API failed");
+    return null;
+  }
 };
