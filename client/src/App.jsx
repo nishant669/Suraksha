@@ -697,8 +697,32 @@ const ForgotPasswordPage = ({ onNavigate }) => {
   );
 };
 
-// ==================== DASHBOARD ====================
 // ==================== DASHBOARD COMPONENTS ====================
+const SafetyNews = () => {
+  const [news, setNews] = React.useState([]);
+
+  React.useEffect(() => {
+    fetch("http://localhost:8000/api/safety/news")
+      .then(res => res.json())
+      .then(data => setNews(data));
+  }, []);
+
+  return (
+    <Card className="p-6 bg-gray-900 border-gray-800">
+      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <FileText className="text-blue-500" /> Live Safety Feed
+      </h3>
+      <div className="space-y-4">
+        {news.map((item, i) => (
+          <div key={i} className="border-b border-gray-800 pb-2">
+            <a href={item.url} target="_blank" className="text-blue-400 text-sm hover:underline">{item.title}</a>
+            <p className="text-xs text-gray-500">{item.source.name}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
 
 // ==================== WEATHER WIDGET ====================
 const WeatherWidget = ({ weatherData, currentDateTime }) => {
@@ -768,17 +792,18 @@ const WeatherWidget = ({ weatherData, currentDateTime }) => {
 };
 
 // ==================== WEATHER FORECAST SECTION ====================
+// ==================== WEATHER FORECAST SECTION ====================
 const WeatherForecastSection = ({ forecast }) => {
-  // Fallback while data is loading
+  // 1. Fallback State: Shows a loading animation if data isn't ready
   if (!forecast || !forecast.time) {
     return (
-      <div className="px-6 py-8 text-center text-gray-500 animate-pulse">
+      <div className="px-6 py-8 text-center text-gray-500 animate-pulse font-mono text-sm">
         Syncing 7-day outlook...
       </div>
     );
   }
 
-  // Map WMO Weather Codes to Lucide Icons
+  // 2. Helper to pick the right weather icon based on WMO codes
   const getWeatherIcon = (code) => {
     if (code === 0) return <Sun className="w-6 h-6 text-yellow-400" />;
     if (code <= 3) return <Cloud className="w-6 h-6 text-blue-300" />;
@@ -789,35 +814,52 @@ const WeatherForecastSection = ({ forecast }) => {
 
   return (
     <div className="px-6 py-8 space-y-6">
+      {/* Section Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-blue-500/10">
           <Calendar className="w-6 h-6 text-blue-500" />
         </div>
-        <h2 className="text-2xl font-black text-white tracking-tighter uppercase italic">7-Day Outlook</h2>
+        <h2 className="text-2xl font-black text-white tracking-tighter uppercase italic">
+          7-Day Outlook
+        </h2>
       </div>
       
+      {/* 7-Day Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
         {forecast.time.map((dateStr, index) => {
           const dateObj = new Date(dateStr);
-          // Check if this iteration is for "Today"
           const isToday = index === 0;
 
           return (
-            <div key={index} className={`rounded-2xl p-4 border transition-all group text-center ${
-              isToday ? 'bg-blue-600/20 border-blue-500/50 shadow-lg' : 'bg-gray-800/40 border-gray-700 hover:border-blue-500'
-            }`}>
+            <div 
+              key={index} 
+              className={`rounded-2xl p-4 border transition-all group text-center ${
+                isToday 
+                  ? 'bg-blue-600/20 border-blue-500/50 shadow-lg' 
+                  : 'bg-gray-800/40 border-gray-700 hover:border-blue-500'
+              }`}
+            >
+              {/* Day Name (e.g., Mon, Tue) */}
               <p className={`font-black text-xs uppercase mb-1 ${isToday ? 'text-white' : 'text-blue-400'}`}>
                 {isToday ? "Today" : dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
               </p>
+
+              {/* Date (e.g., Jan 12) */}
               <p className="text-gray-500 text-[10px] mb-3 font-bold">
                 {dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </p>
+
+              {/* Weather Icon with Hover Animation */}
               <div className="flex justify-center mb-3 group-hover:scale-110 transition-transform">
-                  {getWeatherIcon(forecast.weather_code[index])}
+                {getWeatherIcon(forecast.weather_code[index])}
               </div>
+
+              {/* Max Temp */}
               <div className="text-sm font-black text-white">
                 {Math.round(forecast.temperature_2m_max[index])}°C
               </div>
+
+              {/* Min Temp */}
               <div className="text-[10px] text-gray-500 font-bold">
                 {Math.round(forecast.temperature_2m_min[index])}°C
               </div>
@@ -890,6 +932,7 @@ const ActiveAlertsSection = () => {
     </div>
   );
 };
+
 // ==================== RECENT ACTIVITY SECTION ====================
 const RecentActivitySection = ({ sosHistory = [] }) => {
   return (
@@ -926,75 +969,118 @@ const RecentActivitySection = ({ sosHistory = [] }) => {
     </div>
   );
 };
+
+// ==================== SAFETY NEWS FEED ====================
+const SafetyNewsFeed = () => {
+    const [news, setNews] = useState([]);
+
+    useEffect(() => {
+        const fetchNews = async () => {
+            const res = await fetch('https://suraksha-a74u.onrender.com/api/safety/news?query=travel safety india');
+            const data = await res.json();
+            setNews(data.articles || []);
+        };
+        fetchNews();
+    }, []);
+
+    return (
+        <Card className="p-6 bg-gray-900/60 border-gray-800">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <FileText className="text-blue-500" /> Local Safety Updates
+            </h2>
+            <div className="space-y-4">
+                {news.map((article, i) => (
+                    <div key={i} className="border-b border-gray-800 pb-2">
+                        <a href={article.url} target="_blank" className="text-sm font-semibold text-blue-400 hover:underline">
+                            {article.title}
+                        </a>
+                        <p className="text-xs text-gray-400 mt-1">{article.source.name}</p>
+                    </div>
+                ))}
+            </div>
+        </Card>
+    );
+};
+
 // ==================== MAIN DASHBOARD PAGE ====================
+// ==================== DASHBOARD PAGE ====================
+const DashboardPage = ({ weatherData, currentDateTime, sosHistory, onTriggerSOS }) => {
+  const [isActivated, setIsActivated] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  // Toast state is managed by the parent App usually, but if needed locally:
+  // const [toast, setToast] = useState(null); 
 
-  // ==================== DASHBOARD COMPONENTS ===================
-
-
-// 2. MAIN DASHBOARD PAGE
-const DashboardPage = ({ weatherData, currentDateTime, sosHistory }) => {
-  const [sosActive, setSosActive] = useState(false);
-  const [sosCountdown, setSosCountdown] = useState(5);
-
+  // Effect to handle the countdown when SOS is activated
   useEffect(() => {
     let timer;
-    if (sosActive && sosCountdown > 0) {
-      timer = setTimeout(() => setSosCountdown(sosCountdown - 1), 1000);
-    } else if (sosCountdown === 0) {
-      setSosActive(false);
-      setSosCountdown(5);
+    if (isActivated && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (isActivated && countdown === 0) {
+      onTriggerSOS(); // Trigger the SOS function passed from App.jsx
+      setIsActivated(false);
+      setCountdown(5); // Reset countdown
     }
     return () => clearTimeout(timer);
-  }, [sosActive, sosCountdown]);
+  }, [isActivated, countdown, onTriggerSOS]);
 
   return (
-    <div className="p-6 lg:p-8 space-y-8 animate-fade-in bg-[#020617] min-h-screen">
-      
-      {/* ROW 1: SOS & WEATHER */}
+    <div className="p-6 lg:p-8 space-y-8 bg-[#020617] min-h-screen">
+      {/* ROW 1: COMMAND CENTER & WEATHER */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-        <Card className="bg-gray-900/60 border-gray-800 p-8 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
-          <h2 className="text-2xl font-black text-white mb-8 uppercase tracking-widest italic">Command Center</h2>
-          <button
-            onClick={() => setSosActive(true)}
-            className={`w-52 h-52 rounded-full shadow-2xl transition-all duration-500 flex items-center justify-center group ${
-              sosActive ? 'bg-red-600 scale-90 ring-8 ring-red-900/50' : 'bg-gradient-to-br from-red-600 to-pink-700 hover:scale-105'
-            }`}
-          >
-            <div className="text-center">
-              {sosActive ? (
-                <span className="text-white font-black text-7xl drop-shadow-lg">{sosCountdown}</span>
-              ) : (
-                <>
-                  <Shield className="w-20 h-20 text-white mx-auto mb-2 group-hover:rotate-12 transition-transform" />
-                  <span className="text-white font-black text-4xl">SOS</span>
-                </>
-              )}
-            </div>
-          </button>
-          <p className="text-red-500 mt-8 font-black text-xs uppercase tracking-tighter animate-pulse text-center">
-            {sosActive ? "Transmitting GPS..." : "Tap for immediate emergency assistance"}
-          </p>
+        <Card className="bg-gray-900/60 border-gray-800 p-8 flex flex-col items-center justify-center relative overflow-hidden">
+           {/* Animated Pulse Line */}
+           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
+           
+           <h2 className="text-2xl font-black text-white mb-8 uppercase tracking-widest italic">Command Center</h2>
+           
+           <button 
+             onClick={() => setIsActivated(true)} 
+             className={`w-52 h-52 rounded-full shadow-2xl transition-all duration-300 flex items-center justify-center group ${
+               isActivated 
+                 ? 'bg-red-600 animate-pulse scale-95 ring-8 ring-red-900/50' 
+                 : 'bg-gradient-to-br from-red-600 to-pink-700 hover:scale-105'
+             }`}
+           >
+             <div className="text-center">
+               {isActivated ? (
+                 <div className="text-white">
+                   <div className="text-6xl font-black mb-2">{countdown}</div>
+                   <div className="text-xl font-bold">CANCEL</div>
+                 </div>
+               ) : (
+                 <>
+                   <Shield className="w-20 h-20 text-white mx-auto mb-2 group-hover:rotate-12 transition-transform" />
+                   <span className="text-white font-black text-4xl">SOS</span>
+                 </>
+               )}
+             </div>
+           </button>
+           <p className="text-red-500 mt-8 font-black text-xs uppercase tracking-tighter animate-pulse text-center">
+             Tap for immediate emergency assistance
+           </p>
         </Card>
-
-        <div className="flex flex-col h-full">
-           <WeatherWidget weatherData={weatherData} currentDateTime={currentDateTime} />
-        </div>
+        
+        <WeatherWidget weatherData={weatherData} currentDateTime={currentDateTime} />
       </div>
 
-      {/* ROW 2: 7-DAY FORECAST */}
+      {/* ROW 2: LIVE SAFETY NEWS */}
+      <div className="w-full">
+         <SafetyNews /> {/* Ensure this matches the component name defined above */}
+      </div>
+
+      {/* ROW 3: 7-DAY FORECAST (Restored) */}
       <div className="w-full bg-gray-900/40 rounded-3xl border border-gray-800 shadow-xl">
          <WeatherForecastSection forecast={weatherData?.daily} />
       </div>
 
-      {/* ROW 3: SOS HISTORY (DATA FROM YOUR MYSQL) */}
-      <div className="w-full bg-gray-900/60 rounded-3xl border border-blue-900/20 shadow-2xl overflow-hidden">
-         <RecentActivitySection sosHistory={sosHistory} />
-      </div>
-
-      {/* ROW 4: ALERTS */}
-      <div className="w-full bg-gray-900/60 rounded-3xl border border-red-900/20 shadow-2xl overflow-hidden">
-         <ActiveAlertsSection />
+      {/* ROW 4: HISTORY & ALERTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="w-full bg-gray-900/60 rounded-3xl border border-blue-900/20 shadow-2xl overflow-hidden">
+          <RecentActivitySection sosHistory={sosHistory} />
+        </div>
+        <div className="w-full bg-gray-900/60 rounded-3xl border border-red-900/20 shadow-2xl overflow-hidden">
+          <ActiveAlertsSection />
+        </div>
       </div>
     </div>
   );
@@ -1208,24 +1294,6 @@ const MapPage = () => {
 };
 
 // ==================== SOS PAGE ====================
-// App.jsx - REPLACED SOSPage Component
-// Add a function to create an alert
-const handleTriggerSOS = async () => {
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    await createSOS({
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      message: "Emergency triggered from Dashboard",
-      contacts: [] 
-    });
-    // Refresh history after sending
-    const newHistory = await getSOSHistory();
-    setSosHistory(newHistory);
-  });
-};
-
-// Pass it to DashboardPage
-<DashboardPage onTriggerSOS={handleTriggerSOS} />
 const SOSPage = () => {
   const { user } = useAuth();
   const [isActivated, setIsActivated] = useState(false);
@@ -1233,6 +1301,7 @@ const SOSPage = () => {
   const [customMessage, setCustomMessage] = useState('');
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [toast, setToast] = useState(null);
+  const [localNumbers, setLocalNumbers] = useState({ police: '100', ambulance: '108' });
   
   // Static data for emergency contacts
   const emergencyContacts = [
@@ -1242,6 +1311,20 @@ const SOSPage = () => {
     { id: 4, name: 'Women Helpline', phone: '1091', type: 'women' },
     { id: 5, name: 'Personal', phone: '9755079498', type: 'personal' }, 
   ];
+
+  // Fetch local emergency numbers based on country
+  useEffect(() => {
+    const updateNumbers = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/country/info?country_code=IN");
+        const data = await res.json();
+        setLocalNumbers(data.emergency);
+      } catch (e) { 
+        console.error("API Error", e); 
+      }
+    };
+    updateNumbers();
+  }, []);
 
   // --- NEW: Helper Functions for Call and SMS ---
   const handleCall = (phone) => {
@@ -1582,8 +1665,10 @@ const ServicesPage = () => {
 };
 
 // ==================== GUIDES PAGE ====================
+// ==================== GUIDES PAGE (Safe & Robust) ====================
 const GuidesPage = () => {
-  const [guides, setGuides] = useState([
+  // 1. Static Guides Data
+  const [guides] = useState([
     { 
       id: 1, 
       name: 'Raj Sharma', 
@@ -1621,12 +1706,39 @@ const GuidesPage = () => {
       available: false
     },
   ]);
+
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [toast, setToast] = useState(null);
+  const [apod, setApod] = useState(null);
+
+  // 2. Robust API Fetching with Fallback
+  useEffect(() => {
+    fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY')
+      .then(async (res) => {
+        if (!res.ok) throw new Error("NASA API Rate Limit Exceeded"); // Handle 429 Error
+        return res.json();
+      })
+      .then(data => {
+        // Agar video hai, toh image fallback use karo (kyunki background image video nahi chala sakti)
+        if (data.media_type === 'video') {
+           throw new Error("Video format not supported for background");
+        }
+        setApod(data);
+      })
+      .catch(err => {
+        console.warn("Using Fallback Space Image:", err.message);
+        // Fallback Data (Agar API fail ho jaye toh ye dikhega)
+        setApod({
+          url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+          title: "Earth from Orbit (Fallback View)",
+          date: new Date().toISOString().split('T')[0],
+          explanation: "This view represents the connectivity of our world. While the NASA live feed is currently regenerating (Rate Limit Exceeded), enjoy this stunning view of Earth from space, reminding us of the planet we explore together."
+        });
+      });
+  }, []);
 
   const handleBookGuide = (guideId) => {
     setToast({ message: 'Guide booking request sent!', type: 'success' });
-    // In a real app, this would send a booking request
   };
 
   return (
@@ -1634,9 +1746,42 @@ const GuidesPage = () => {
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
       
       <div>
-        <h1 className="text-4xl font-black mb-2 text-white">Local Guides</h1>
-        <p className="text-gray-300 text-lg">Find verified local guides for safe and informative tours</p>
+        <h1 className="text-4xl font-black mb-2 text-white">Local & Cosmic Guides</h1>
+        <p className="text-gray-300 text-lg">Explore the earth with locals, and the universe with NASA.</p>
       </div>
+
+      {/* --- NASA APOD SECTION --- */}
+      {apod && (
+        <Card className="relative overflow-hidden border-gray-700 group h-64 md:h-80 shadow-2xl rounded-2xl">
+          {/* Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+            style={{ backgroundImage: `url(${apod.url})` }}
+          ></div>
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
+
+          {/* Content */}
+          <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                <Star className="w-3 h-3" /> NASA APOD
+              </span>
+              <span className="text-gray-300 text-xs font-mono bg-black/50 px-2 py-1 rounded-full">
+                {apod.date}
+              </span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 drop-shadow-md">
+              {apod.title}
+            </h2>
+            <p className="text-gray-200 text-sm md:text-base line-clamp-2 md:line-clamp-3 max-w-3xl drop-shadow-sm">
+              {apod.explanation}
+            </p>
+          </div>
+        </Card>
+      )}
+      {/* ----------------------------- */}
 
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4">
@@ -1675,15 +1820,10 @@ const GuidesPage = () => {
                 <div className="flex flex-col items-end gap-1">
                   {guide.verified && (
                     <span className="flex items-center gap-1 text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded-full">
-                      <CheckCircle className="w-3 h-3" />
-                      Verified
+                      <CheckCircle className="w-3 h-3" /> Verified
                     </span>
                   )}
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    guide.available 
-                      ? 'bg-green-500/10 text-green-500' 
-                      : 'bg-red-500/10 text-red-500'
-                  }`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${guide.available ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                     {guide.available ? 'Available' : 'Busy'}
                   </span>
                 </div>
@@ -1694,41 +1834,21 @@ const GuidesPage = () => {
                   <p className="text-sm font-semibold mb-1 text-white">Languages</p>
                   <div className="flex flex-wrap gap-1">
                     {guide.languages.map((lang, idx) => (
-                      <span key={idx} className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold mb-1 text-white">Specialties</p>
-                  <div className="flex flex-wrap gap-1">
-                    {guide.specialties.map((specialty, idx) => (
-                      <span key={idx} className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
-                        {specialty}
-                      </span>
+                      <span key={idx} className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">{lang}</span>
                     ))}
                   </div>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">Experience: {guide.experience}</span>
+                  <span className="text-gray-300">Exp: {guide.experience}</span>
                   <span className="font-bold text-white">₹{guide.price}/day</span>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-700"
-                  onClick={() => setSelectedGuide(guide.id)}
-                >
+                <Button variant="outline" className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-700" onClick={() => setSelectedGuide(guide.id)}>
                   View Profile
                 </Button>
-                <Button 
-                  className="flex-1"
-                  disabled={!guide.available}
-                  onClick={() => handleBookGuide(guide.id)}
-                >
+                <Button className="flex-1" disabled={!guide.available} onClick={() => handleBookGuide(guide.id)}>
                   Book Now
                 </Button>
               </div>
@@ -1736,145 +1856,24 @@ const GuidesPage = () => {
           </Card>
         ))}
       </div>
-
-      {/* Guide Profile Modal */}
-      {selectedGuide && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-white">Guide Profile</h2>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedGuide(null)} className="text-gray-300 hover:bg-gray-700">
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-              
-              {(() => {
-                const guide = guides.find(g => g.id === selectedGuide);
-                return guide ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-900/20">
-                        {guide.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-xl text-white">{guide.name}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                            <span className="font-semibold text-white">{guide.rating}</span>
-                            <span className="text-sm text-gray-300">({guide.reviews} reviews)</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-2">
-                          {guide.verified && (
-                            <span className="flex items-center gap-1 text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded-full">
-                              <CheckCircle className="w-3 h-3" />
-                              Verified
-                            </span>
-                          )}
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            guide.available 
-                              ? 'bg-green-500/10 text-green-500' 
-                              : 'bg-red-500/10 text-red-500'
-                          }`}>
-                            {guide.available ? 'Available' : 'Busy'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-semibold mb-1 text-white">Experience</p>
-                        <p className="text-lg text-white">{guide.experience}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold mb-1 text-white">Daily Rate</p>
-                        <p className="text-lg font-bold text-white">₹{guide.price}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold mb-2 text-white">Languages</p>
-                      <div className="flex flex-wrap gap-2">
-                        {guide.languages.map((lang, idx) => (
-                          <span key={idx} className="bg-gray-700 px-3 py-1 rounded-full text-sm text-gray-300">
-                            {lang}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold mb-2 text-white">Specialties</p>
-                      <div className="flex flex-wrap gap-2">
-                        {guide.specialties.map((specialty, idx) => (
-                          <span key={idx} className="bg-gray-700 px-3 py-1 rounded-full text-sm text-gray-300">
-                            {specialty}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold mb-2 text-white">About</p>
-                      <p className="text-gray-300">
-                        {guide.name} is an experienced local guide with deep knowledge of the region's culture, history, and natural attractions. 
-                        They specialize in {guide.specialties.join(', ')} and can communicate fluently in {guide.languages.join(', ')}.
-                        With {guide.experience} of experience, they ensure safe and informative tours for all travelers.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <Button variant="outline" className="flex-1 gap-2 border-gray-700 text-gray-300 hover:bg-gray-700">
-                        <MessageSquare className="w-4 h-4" />
-                        Message
-                      </Button>
-                      <Button 
-                        className="flex-1 gap-2" 
-                        disabled={!guide.available}
-                        onClick={() => {
-                          handleBookGuide(guide.id);
-                          setSelectedGuide(null);
-                        }}
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Book Now
-                      </Button>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };
-
-// ==================== CHAT PAGE ====================
+/// ==================== CHAT PAGE (With JokeAPI) ====================
+// ==================== CHAT PAGE (FIXED & SAFE JOKE API) ====================
 const ChatPage = () => {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! I'm your AI travel assistant. How can I help you today?", sender: 'ai', time: '10:00 AM' },
-    { id: 2, text: "I'm planning a trip to Kaziranga National Park. What are the best times to visit?", sender: 'user', time: '10:01 AM' },
-    { id: 3, text: "The best time to visit Kaziranga National Park is from November to April. During this period, the weather is pleasant, and you're more likely to spot wildlife including the famous one-horned rhinoceros. The park is closed from May to October due to monsoon rains.", sender: 'ai', time: '10:02 AM' },
+    { id: 1, text: "Hello! I'm your AI travel assistant. Ask me anything or say 'tell me a joke'!", sender: 'ai', time: '10:00 AM' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-  const [toast, setToast] = useState(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputText.trim() === '') return;
 
     const newMessage = {
@@ -1884,15 +1883,55 @@ const ChatPage = () => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages(prev => [...prev, newMessage]);
+    const userQuery = inputText.toLowerCase();
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response
+    // --- FIXED JOKE API LOGIC ---
+    if (userQuery.includes('joke') || userQuery.includes('funny')) {
+      try {
+        // "Travel" category exist nahi karti, isliye 400 error aa raha tha. 
+        // Hum "Any" category use karenge with safe mode.
+        const res = await fetch('https://v2.jokeapi.dev/joke/Any?safe-mode&type=single');
+        
+        if (!res.ok) throw new Error("Joke API failed");
+        
+        const data = await res.json();
+        
+        setTimeout(() => {
+          const botResponse = {
+            id: Date.now(),
+            text: data.joke || "Why did the tourist cross the road? To get to the safe side!",
+            sender: 'ai',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages(prev => [...prev, botResponse]);
+          setIsTyping(false);
+        }, 1000);
+        return; 
+      } catch (e) {
+        console.error("Joke fetch error:", e);
+        // Fallback agar API fail ho jaye
+        setTimeout(() => {
+           setMessages(prev => [...prev, {
+             id: Date.now(),
+             text: "Why don't mountains get cold? They have snowcaps! (API Error fallback)",
+             sender: 'ai',
+             time: new Date().toLocaleTimeString()
+           }]);
+           setIsTyping(false);
+        }, 1000);
+        return;
+      }
+    }
+    // ---------------------------
+
+    // Default Simulation Response
     setTimeout(() => {
       const aiResponse = {
-        id: messages.length + 2,
-        text: "Thank you for your question. I'm processing your request and will provide you with the best information available.",
+        id: Date.now(),
+        text: "I can help you with Safe Routes, Weather, or Emergency Contacts. Or ask me for a 'joke'!",
         sender: 'ai',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -1905,40 +1944,23 @@ const ChatPage = () => {
     { id: 1, text: "Safe routes near me", icon: Navigation },
     { id: 2, text: "Emergency contacts", icon: Phone },
     { id: 3, text: "Local weather", icon: Cloud },
-    { id: 4, text: "Tourist attractions", icon: MapPin },
+    { id: 4, text: "Tell me a joke", icon: MessageSquare },
   ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] p-6 md:p-8 animate-fade-in">
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      
       <div className="mb-6">
         <h1 className="text-4xl font-black mb-2 text-white">AI Travel Assistant</h1>
         <p className="text-gray-300 text-lg">Get instant help with your travel queries</p>
       </div>
 
-      {/* Chat Container */}
       <Card className="flex-1 flex flex-col overflow-hidden bg-gray-800 border-gray-700">
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-700">
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] p-4 rounded-2xl ${
-                  message.sender === 'user'
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
-                    : 'bg-gray-700 text-white'
-                }`}
-              >
+            <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] p-4 rounded-2xl ${message.sender === 'user' ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20' : 'bg-gray-700 text-white'}`}>
                 <p>{message.text}</p>
-                <p className={`text-xs mt-2 ${
-                  message.sender === 'user' ? 'text-blue-100' : 'text-gray-400'
-                }`}>
-                  {message.time}
-                </p>
+                <p className={`text-xs mt-2 ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-400'}`}>{message.time}</p>
               </div>
             </div>
           ))}
@@ -1954,11 +1976,9 @@ const ChatPage = () => {
               </div>
             </div>
           )}
-          
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Actions */}
         <div className="border-t border-gray-700 p-4 bg-gray-800">
           <p className="text-sm font-semibold mb-3 text-white">Quick Actions</p>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -1976,7 +1996,6 @@ const ChatPage = () => {
             ))}
           </div>
 
-          {/* Input */}
           <div className="flex gap-2">
             <Input
               placeholder="Type your message..."
@@ -1995,7 +2014,6 @@ const ChatPage = () => {
     </div>
   );
 };
-
 // ==================== BLOCKCHAIN PAGE ====================
 const BlockchainPage = () => {
   const { user } = useAuth();
@@ -2242,8 +2260,6 @@ const BlockchainPage = () => {
     </div>
   );
 };
-
-// ... (Your code cut off inside ProfilePage, here is the complete component and the rest of the file)
 
 // ==================== PROFILE PAGE ====================
 const ProfilePage = () => {
@@ -2571,37 +2587,38 @@ const App = () => {
     if (user) {
       // PRIORITY 1: Weather (Trigger GPS immediately)
       const fetchWeather = async () => {
-  if (!navigator.geolocation) {
-    console.warn("Geolocation not supported by browser");
-    const fallback = await getWeather(23.25, 77.41);
-    setWeather(fallback);
-    return;
-  }
+        if (!navigator.geolocation) {
+          console.warn("Geolocation not supported by browser");
+          const fallback = await getWeather(23.25, 77.41);
+          setWeather(fallback);
+          return;
+        }
 
-  console.log("📍 Requesting GPS location for weather...");
+        console.log("📍 Requesting GPS location for weather...");
 
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      console.log("✅ GPS success:", pos.coords.latitude, pos.coords.longitude);
-      try {
-        const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
-        setWeather(data);
-      } catch (err) {
-        console.error("❌ Weather API error:", err);
-      }
-    },
-    async (error) => {
-      console.warn("⚠️ GPS error/denied:", error.message);
-      // Immediate fallback so the UI doesn't hang
-      const data = await getWeather(23.25, 77.41); 
-      setWeather(data);
-    },
-    { 
-      timeout: 5000,           // Force failure after 5 seconds
-      enableHighAccuracy: false // Uses Wi-Fi/Cell towers (much faster than GPS satellites)
-    }
-  );
-};
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            console.log("✅ GPS success:", pos.coords.latitude, pos.coords.longitude);
+            try {
+              const data = await getWeather(pos.coords.latitude, pos.coords.longitude);
+              setWeather(data);
+            } catch (err) {
+              console.error("❌ Weather API error:", err);
+            }
+          },
+          async (error) => {
+            console.warn("⚠️ GPS error/denied:", error.message);
+            // Immediate fallback so the UI doesn't hang
+            const data = await getWeather(23.25, 77.41); 
+            setWeather(data);
+          },
+          { 
+            timeout: 5000,           // Force failure after 5 seconds
+            enableHighAccuracy: false // Uses Wi-Fi/Cell towers (much faster than GPS satellites)
+          }
+        );
+      };
+      
       // PRIORITY 2: SOS History (Non-blocking)
       const fetchHistory = async () => {
         try {
@@ -2614,6 +2631,53 @@ const App = () => {
       fetchHistory(); // Fires in parallel
     }
   }, [user]);
+
+  // Function to handle SOS trigger
+  const handleTriggerSOS = async () => {
+    if (!navigator.geolocation) {
+      console.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch("https://suraksha-a74u.onrender.com/api/sos/create", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              latitude,
+              longitude,
+              message: "Emergency triggered from Dashboard",
+              contacts: []
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to send SOS");
+          }
+
+          const data = await response.json();
+          console.log("SOS sent successfully:", data);
+          
+          // Refresh history after sending
+          const newHistory = await getSOSHistory();
+          setSosHistory(newHistory);
+        } catch (error) {
+          console.error("Error sending SOS:", error);
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+      }
+    );
+  };
 
   // 1. PHASE ONE: Full Screen Loading Animation
   if (authLoading) {
@@ -2651,7 +2715,8 @@ const App = () => {
     const dashboardProps = { 
       weatherData: weather, 
       currentDateTime, 
-      sosHistory 
+      sosHistory,
+      onTriggerSOS: handleTriggerSOS
     };
 
     switch(currentPage) {

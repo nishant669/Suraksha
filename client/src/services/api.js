@@ -4,7 +4,11 @@
 
 // Vite uses import.meta.env instead of process.env
 // Hardcode the production URL to be 100% sure while debugging
-const API_URL = "https://suraksha-a74u.onrender.com/api";
+// services/api.js
+// services/api.js mein is line ko check karein
+// services/api.js
+// Render ka URL hata kar localhost ka URL dalein
+const API_URL = 'http://localhost:8000/api'; 
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -13,6 +17,8 @@ const getAuthHeaders = () => {
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
   };
 };
+
+// ... baaki poora code same rahega
 
 // ... rest of your file
 
@@ -29,16 +35,18 @@ export const registerUser = async (userData) => {
 
 export const loginUser = async (credentials) => {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+  // 8000 (8s) ko badal kar 30000 (30s) karein
+  const id = setTimeout(() => controller.abort(), 30000); 
 
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
-      signal: controller.signal, // Connect the timeout signal
+      signal: controller.signal,
     });
     clearTimeout(id);
+    // ... rest of the code
     
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Login failed");
@@ -80,4 +88,10 @@ export const getUserProfile = async () => {
   });
   if (!response.ok) throw new Error("Failed to fetch profile");
   return await response.json();
+};
+export const getCountryNumbers = async (countryCode) => {
+  const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
+  const data = await res.json();
+  // Isse hum police/ambulance ke local numbers nikal sakte hain
+  return data[0];
 };

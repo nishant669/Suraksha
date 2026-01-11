@@ -31,16 +31,20 @@ app = FastAPI(title="Suraksha API", lifespan=lifespan)
 
 # server/app/main.py
 
+# server/app/main.py
+
+# server/app/main.py
+
+# server/app/main.py
+# server/app/main.py
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://suraksha-frontened-org.onrender.com", # Your specific frontend
-        "http://localhost:5173",                      # Local Vite dev
-        "http://127.0.0.1:5173"
-    ],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], 
     allow_credentials=True,
-    allow_methods=["*"], # Allow all methods
-    allow_headers=["*"], # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 # --- WEATHER ROUTE ---
 
@@ -157,3 +161,37 @@ async def get_sos_history(
 @app.get("/")
 async def root():
     return {"message": "Suraksha API is active", "docs": "/docs"}
+
+# --- NEW: SAFETY NEWS & COUNTRY DATA ---
+
+# server/app/main.py
+# server/app/main.py ke andar update karein
+@app.get("/api/safety/news")
+async def get_safety_news():
+    # newsapi.org se free key le kar yahan daalein
+    api_key = "PASTE_YOUR_REAL_NEWS_API_KEY_HERE" 
+    # Humne query ko specifically safety aur travel alerts par rakha hai
+    url = f"https://newsapi.org/v2/everything?q=travel+safety+india+accident+weather&sortBy=publishedAt&pageSize=5&apiKey={api_key}"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return data.get("articles", [])
+    except Exception as e:
+        print(f"News API Error: {e}")
+        return []
+
+@app.get("/api/country/info")
+async def get_country_emergency(country_code: str):
+    # REST Countries API (No key required)
+    url = f"https://restcountries.com/v3.1/alpha/{country_code}"
+    try:
+        response = requests.get(url)
+        data = response.json()[0]
+        return {
+            "name": data['name']['common'],
+            "flag": data['flags']['svg'],
+            # Note: REST Countries provides general info, we can map common numbers
+            "emergency": {"police": "100", "ambulance": "108"} 
+        }
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch country data")
