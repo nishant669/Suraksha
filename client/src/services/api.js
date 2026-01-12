@@ -1,7 +1,6 @@
 // client/src/services/api.js
 
-// 🟢 CRITICAL CHANGE: Use Render Backend URL for Production
-// Localhost hata diya hai, ab ye seedha Cloud se connect karega.
+// 🟢 Backend Connection (Render URL)
 const API_URL = 'https://suraksha-a74u.onrender.com/api';
 
 const getAuthHeaders = () => {
@@ -25,7 +24,7 @@ export const registerUser = async (userData) => {
 
 export const loginUser = async (credentials) => {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 30000); // 30s timeout for slow render wake-up
+  const id = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -97,4 +96,16 @@ export const getCountryNumbers = async (countryCode) => {
     console.error("Country API failed");
     return null;
   }
+};
+
+// 🟢 NEW: AI Chatbot Function (App.jsx ko clean rakhne ke liye)
+export const chatWithAI = async (message) => {
+  const response = await fetch(`${API_URL}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  });
+  
+  if (!response.ok) throw new Error("AI Service Unavailable");
+  return await response.json();
 };

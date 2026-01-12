@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
+import { chatWithAI } from './services/api';
 // 1. COMBINED API IMPORT (Fixes the declared error)
 import { getWeather, getSOSHistory } from './services/api';
 import { useAuth } from './context/AuthContext'; 
@@ -1848,10 +1848,10 @@ const GuidesPage = () => {
   );
 };
 /// ==================== CHAT PAGE (With JokeAPI) ====================
-// ==================== CHAT PAGE (FIXED & SAFE JOKE API) ====================
+// ==================== CHAT PAGE (FINAL & CLEAN) ====================
 const ChatPage = () => {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! I'm your AI travel assistant. Ask me anything or say 'tell me a joke'!", sender: 'ai', time: '10:00 AM' }
+    { id: 1, text: "Hello! I'm your AI travel assistant. Ask me about safe routes, emergency contacts, or travel tips!", sender: 'ai', time: '10:00 AM' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -1860,8 +1860,6 @@ const ChatPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // client/src/App.jsx -> ChatPage Component
 
   const handleSendMessage = async () => {
     if (inputText.trim() === '') return;
@@ -1875,24 +1873,19 @@ const ChatPage = () => {
     };
 
     setMessages(prev => [...prev, newMessage]);
-    const userMessage = inputText; // Store for API call
+    const userMessage = inputText;
     setInputText('');
     setIsTyping(true);
 
     try {
-      // 2. Backend API Call (Real AI)
-      const res = await fetch('https://suraksha-a74u.onrender.com/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage })
-      });
-
-      const data = await res.json();
+      // 2. Backend API Call (Using api.js function)
+      // Ab hum direct fetch nahi kar rahe, balki centralized api function use kar rahe hain
+      const data = await chatWithAI(userMessage);
 
       // 3. AI Response Show karein
       const botResponse = {
         id: Date.now(),
-        text: data.reply || "Sorry, I didn't get that.",
+        text: data.reply || "I am listening...",
         sender: 'ai',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -1901,10 +1894,10 @@ const ChatPage = () => {
 
     } catch (error) {
       console.error("Chat Error:", error);
-      // Fallback Response
+      // Fallback Message
       setMessages(prev => [...prev, {
         id: Date.now(),
-        text: "My connection is weak. Please check your internet.",
+        text: "System Offline. Please check your internet or API Key.",
         sender: 'ai',
         time: new Date().toLocaleTimeString()
       }]);
@@ -1917,7 +1910,7 @@ const ChatPage = () => {
     { id: 1, text: "Safe routes near me", icon: Navigation },
     { id: 2, text: "Emergency contacts", icon: Phone },
     { id: 3, text: "Local weather", icon: Cloud },
-    { id: 4, text: "Tell me a joke", icon: MessageSquare },
+    { id: 4, text: "Travel safety tips", icon: MessageSquare },
   ];
 
   return (
