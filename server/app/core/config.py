@@ -7,10 +7,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # Database (Default local, but Render Env Var overrides this automatically)
+    # Database
     DATABASE_URL: str = "sqlite:///./suraksha.db"
     
-    # External APIs (New)
+    # --- NEW: External API Keys ---
     NEWS_API_KEY: Optional[str] = None
 
     # Email / SMTP

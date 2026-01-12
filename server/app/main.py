@@ -11,7 +11,7 @@ from app.db.database import engine, get_db, Base
 from app.db.models import User, SOS
 from app.schemas.schemas import UserCreate, UserResponse, Token, UserLogin, SOSCreate
 from app.core.auth import get_current_active_user, get_password_hash, create_access_token, verify_password
-from app.core.config import settings  # Import settings
+from app.core.config import settings  # <--- IMPORT SETTINGS HERE
 
 # --- LIFESPAN MANAGER ---
 @asynccontextmanager
@@ -22,12 +22,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Suraksha API", lifespan=lifespan)
 
-# --- CORS SETUP (CRITICAL) ---
+# --- CORS SETUP ---
 app.add_middleware(
     CORSMiddleware,
+    # 🟢 Allow both Localhost and Render Frontend
     allow_origins=[
-        "http://localhost:5173",                      # Local Testing
-        "https://suraksha-frontened-org.onrender.com" # Deployed Frontend
+        "http://localhost:5173", 
+        "https://suraksha-frontened-org.onrender.com"
     ], 
     allow_credentials=True,
     allow_methods=["*"],
@@ -128,7 +129,7 @@ async def get_sos_history(db: Session = Depends(get_db), current_user: User = De
 # --- EXTERNAL DATA ROUTES ---
 @app.get("/api/safety/news")
 async def get_safety_news():
-    # Gets key from config.py (which gets it from Render Env Vars)
+    # 🟢 Correct Way: Use settings from config.py
     api_key = settings.NEWS_API_KEY 
     
     if not api_key:
