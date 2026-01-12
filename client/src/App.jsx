@@ -696,34 +696,6 @@ const ForgotPasswordPage = ({ onNavigate }) => {
     </div>
   );
 };
-
-// ==================== DASHBOARD COMPONENTS ====================
-const SafetyNews = () => {
-  const [news, setNews] = React.useState([]);
-
-  React.useEffect(() => {
-    fetch("http://localhost:8000/api/safety/news")
-      .then(res => res.json())
-      .then(data => setNews(data));
-  }, []);
-
-  return (
-    <Card className="p-6 bg-gray-900 border-gray-800">
-      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-        <FileText className="text-blue-500" /> Live Safety Feed
-      </h3>
-      <div className="space-y-4">
-        {news.map((item, i) => (
-          <div key={i} className="border-b border-gray-800 pb-2">
-            <a href={item.url} target="_blank" className="text-blue-400 text-sm hover:underline">{item.title}</a>
-            <p className="text-xs text-gray-500">{item.source.name}</p>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-};
-
 // ==================== WEATHER WIDGET ====================
 const WeatherWidget = ({ weatherData, currentDateTime }) => {
   if (!weatherData) {
@@ -971,11 +943,15 @@ const RecentActivitySection = ({ sosHistory = [] }) => {
 };
 
 // ==================== SAFETY NEWS FEED ====================
-const SafetyNewsFeed = () => {
+// ✅ CORRECT CODE (Ise rakhein aur rename karein)
+
+// Naam badal kar 'SafetyNews' kar dein
+const SafetyNews = () => { 
     const [news, setNews] = useState([]);
 
     useEffect(() => {
         const fetchNews = async () => {
+            // ✅ Render URL (Sahi hai)
             const res = await fetch('https://suraksha-a74u.onrender.com/api/safety/news?query=travel safety india');
             const data = await res.json();
             setNews(data.articles || []);
@@ -1313,10 +1289,16 @@ const SOSPage = () => {
   ];
 
   // Fetch local emergency numbers based on country
+  // ... states ...
+  // Fetch local emergency numbers based on country
   useEffect(() => {
     const updateNumbers = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/country/info?country_code=IN");
+        // 🔴 PURANA (DELETE): const res = await fetch("http://localhost:8000/api/country/info?country_code=IN");
+
+        // 🟢 NAYA (ADD THIS): Render URL use karein
+        const res = await fetch("https://suraksha-a74u.onrender.com/api/country/info?country_code=IN");
+        
         const data = await res.json();
         setLocalNumbers(data.emergency);
       } catch (e) { 
