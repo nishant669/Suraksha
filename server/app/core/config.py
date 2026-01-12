@@ -1,3 +1,5 @@
+# server/app/core/config.py
+
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -10,8 +12,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./suraksha.db"
     
-    # --- NEW: External API Keys ---
+    # --- External API Keys ---
     NEWS_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None  # 🟢 <--- YE ADD KAREIN
 
     # Email / SMTP
     SMTP_HOST: str = "smtp.gmail.com"

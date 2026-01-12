@@ -1861,9 +1861,12 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // client/src/App.jsx -> ChatPage Component
+
   const handleSendMessage = async () => {
     if (inputText.trim() === '') return;
 
+    // 1. User Message Show karein
     const newMessage = {
       id: messages.length + 1,
       text: inputText,
@@ -1872,60 +1875,42 @@ const ChatPage = () => {
     };
 
     setMessages(prev => [...prev, newMessage]);
-    const userQuery = inputText.toLowerCase();
+    const userMessage = inputText; // Store for API call
     setInputText('');
     setIsTyping(true);
 
-    // --- FIXED JOKE API LOGIC ---
-    if (userQuery.includes('joke') || userQuery.includes('funny')) {
-      try {
-        // "Travel" category exist nahi karti, isliye 400 error aa raha tha. 
-        // Hum "Any" category use karenge with safe mode.
-        const res = await fetch('https://v2.jokeapi.dev/joke/Any?safe-mode&type=single');
-        
-        if (!res.ok) throw new Error("Joke API failed");
-        
-        const data = await res.json();
-        
-        setTimeout(() => {
-          const botResponse = {
-            id: Date.now(),
-            text: data.joke || "Why did the tourist cross the road? To get to the safe side!",
-            sender: 'ai',
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          setMessages(prev => [...prev, botResponse]);
-          setIsTyping(false);
-        }, 1000);
-        return; 
-      } catch (e) {
-        console.error("Joke fetch error:", e);
-        // Fallback agar API fail ho jaye
-        setTimeout(() => {
-           setMessages(prev => [...prev, {
-             id: Date.now(),
-             text: "Why don't mountains get cold? They have snowcaps! (API Error fallback)",
-             sender: 'ai',
-             time: new Date().toLocaleTimeString()
-           }]);
-           setIsTyping(false);
-        }, 1000);
-        return;
-      }
-    }
-    // ---------------------------
+    try {
+      // 2. Backend API Call (Real AI)
+      const res = await fetch('https://suraksha-a74u.onrender.com/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage })
+      });
 
-    // Default Simulation Response
-    setTimeout(() => {
-      const aiResponse = {
+      const data = await res.json();
+
+      // 3. AI Response Show karein
+      const botResponse = {
         id: Date.now(),
-        text: "I can help you with Safe Routes, Weather, or Emergency Contacts. Or ask me for a 'joke'!",
+        text: data.reply || "Sorry, I didn't get that.",
         sender: 'ai',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      setMessages(prev => [...prev, aiResponse]);
+      
+      setMessages(prev => [...prev, botResponse]);
+
+    } catch (error) {
+      console.error("Chat Error:", error);
+      // Fallback Response
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        text: "My connection is weak. Please check your internet.",
+        sender: 'ai',
+        time: new Date().toLocaleTimeString()
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const quickActions = [

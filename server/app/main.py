@@ -12,6 +12,7 @@ from app.db.models import User, SOS
 from app.schemas.schemas import UserCreate, UserResponse, Token, UserLogin, SOSCreate
 from app.core.auth import get_current_active_user, get_password_hash, create_access_token, verify_password
 from app.core.config import settings  # <--- IMPORT SETTINGS HERE
+import google.generativeai as genai # Import add karein
 
 # --- LIFESPAN MANAGER ---
 @asynccontextmanager
@@ -158,3 +159,38 @@ async def get_country_emergency(country_code: str):
         }
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch country data")
+# server/app/main.py
+
+
+# ... baaki code ...
+
+# --- AI CHATBOT ROUTE (Google Gemini) ---
+@app.post("/api/chat")
+async def chat_with_ai(request: dict):
+    user_message = request.get("message")
+    
+    # 1. Configure Key
+    api_key = settings.GEMINI_API_KEY
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI Key not configured")
+
+    try:
+        # 2. Setup Model
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro')
+        
+        # 3. Custom Instruction (System Prompt)
+        # Hum AI ko batayenge ki wo Travel Assistant hai
+        prompt = (
+            f"You are a helpful safety and travel assistant for the 'Suraksha' app in India. "
+            f"Keep answers short, helpful, and friendly. User asks: {user_message}"
+        )
+
+        # 4. Generate Response
+        response = model.generate_content(prompt)
+        return {"reply": response.text}
+        
+    except Exception as e:
+        print(f"Gemini Error: {e}")
+        # Fallback agar quota khatam ho jaye
+        return {"reply": "I'm having trouble connecting to the AI brain right now. Try again later!"}
