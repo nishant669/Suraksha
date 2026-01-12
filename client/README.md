@@ -1,5 +1,3 @@
-Based on the React + Vite template you provided and your "Tourist Safety" (Suraksha) project context, here is a professional README.md specifically for your client (frontend) folder.
-
 You can create a file named README.md inside your client folder and paste this content:
 
 🛡️ Suraksha (Tourist Safety) — Frontend Client
