@@ -1712,27 +1712,33 @@ const GuidesPage = () => {
   const [apod, setApod] = useState(null);
 
   // 2. Robust API Fetching with Fallback
+ // client/src/App.jsx -> GuidesPage component mein ye replace karein
+
   useEffect(() => {
-    fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY')
+    // 🟢 Step 1: Key Environment Variable se uthao
+    const apiKey = import.meta.env.VITE_NASA_API_KEY || 'DEMO_KEY';
+    
+    // Debugging ke liye (Browser console mein dikhega)
+    console.log("Fetching NASA APOD with Key ending in:", apiKey.slice(-4));
+
+    // 🟢 Step 2: API Call with Key
+    fetch(`https://api.nasa.gov/planetary/apod?api_key=${apiKey}`)
       .then(async (res) => {
-        if (!res.ok) throw new Error("NASA API Rate Limit Exceeded"); // Handle 429 Error
+        if (!res.ok) throw new Error("NASA API Rate Limit or Error");
         return res.json();
       })
       .then(data => {
-        // Agar video hai, toh image fallback use karo (kyunki background image video nahi chala sakti)
-        if (data.media_type === 'video') {
-           throw new Error("Video format not supported for background");
-        }
+        if (data.media_type === 'video') throw new Error("Video not supported");
         setApod(data);
       })
       .catch(err => {
         console.warn("Using Fallback Space Image:", err.message);
-        // Fallback Data (Agar API fail ho jaye toh ye dikhega)
+        // Fallback Image
         setApod({
           url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
           title: "Earth from Orbit (Fallback View)",
           date: new Date().toISOString().split('T')[0],
-          explanation: "This view represents the connectivity of our world. While the NASA live feed is currently regenerating (Rate Limit Exceeded), enjoy this stunning view of Earth from space, reminding us of the planet we explore together."
+          explanation: "Connecting to NASA... In the meantime, enjoy this view of Earth."
         });
       });
   }, []);
