@@ -99,13 +99,42 @@ export const getCountryNumbers = async (countryCode) => {
 };
 
 // 🟢 NEW: AI Chatbot Function (App.jsx ko clean rakhne ke liye)
+// client/src/services/api.js
+
+// ... Upar ka baaki code same rahega (API_URL, auth headers etc) ...
+
+// 👇 Is Function ko Update Karein 👇
 export const chatWithAI = async (message) => {
-  const response = await fetch(`${API_URL}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message })
-  });
-  
-  if (!response.ok) throw new Error("AI Service Unavailable");
-  return await response.json();
+  try {
+    // 1️⃣ Pehle Google Gemini Try karo
+    const response = await fetch(`${API_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    
+    // Agar Gemini fail hua (e.g. 400 ya 500 error), toh Error throw karo
+    if (!response.ok) throw new Error("Gemini Service Failed");
+    
+    return await response.json();
+
+  } catch (error) {
+    console.warn("⚠️ Google AI Failed, Switching to Joke API...", error);
+
+    // 2️⃣ Fallback: Joke API Call karo
+    try {
+      // Safe Jokes only (No NSFW, racist, etc.)
+      const jokeRes = await fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single');
+      const jokeData = await jokeRes.json();
+      
+      return { 
+        reply: `(AI is sleeping 😴, here is a joke): ${jokeData.joke}` 
+      };
+    } catch (jokeError) {
+      // 3️⃣ Agar Joke API bhi fail ho gayi, tab Final Error dikhao
+      return { 
+        reply: "System is currently offline. Please check your internet connection." 
+      };
+    }
+  }
 };
