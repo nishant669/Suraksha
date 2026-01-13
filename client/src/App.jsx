@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { chatWithAI } from './services/api';
-// 1. COMBINED API IMPORT (Fixes the declared error)
-import { getWeather, getSOSHistory } from './services/api';
-import { useAuth } from './context/AuthContext'; 
+import React, { useState, useEffect } from 'react';
 
-// 2. COMBINED ICON IMPORT
+// ✅ 1. Auth & API Imports
+import { useAuth } from './context/AuthContext'; 
+import { getWeather, getSOSHistory } from './services/api';
+
+// ✅ 2. New Page Import 
+
+import MapPage from './pages/MapPage'; 
+
+// ✅ 3. Consolidated Icons Import (Saare icons ek saath)
 import { 
   Cloud, Sun, CloudRain, Shield, Menu, X, MapPin, Phone, Users, 
   MessageSquare, Map as MapIcon, User, Home, Info, Mail, HelpCircle, 
@@ -19,18 +20,18 @@ import {
 
 // Services
 // Assets
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+// import markerIcon from 'leaflet/dist/images/marker-icon.png';
+// import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Leaflet Icon Fix
-let DefaultIcon = L.icon({
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+// // Leaflet Icon Fix
+// let DefaultIcon = L.icon({
+//     iconUrl: markerIcon,
+//     shadowUrl: markerShadow,
+//     iconSize: [25, 41],
+//     iconAnchor: [12, 41],
+//     popupAnchor: [1, -34]
+// });
+// L.Marker.prototype.options.icon = DefaultIcon;
 
 // ==================== CSS FOR REALISTIC ANIMATION ====================
 const AnimationStyles = () => (
@@ -1061,213 +1062,222 @@ const DashboardPage = ({ weatherData, currentDateTime, sosHistory, onTriggerSOS 
     </div>
   );
 };
-// ==================== MAP PAGE ====================
-const MapPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRoute, setSelectedRoute] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
+// // ==================== MAP PAGE ====================
+// const RecenterMap = ({ lat, lon }) => {
+//     const map = useMap();
+//     useEffect(() => {
+//         if (lat && lon) {
+//             map.flyTo([lat, lon], 13, { animate: true });
+//         }
+//     }, [lat, lon, map]);
+//     return null;
+// };
+// const MapPage = () => {
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [selectedRoute, setSelectedRoute] = useState(null);
+//   const [showFilters, setShowFilters] = useState(false);
     
-  const safeRoutes = [
-    { id: 1, name: 'Guwahati to Shillong', safety: 95, time: '3h 30m', distance: '103 km', type: 'highway' },
-    { id: 2, name: 'Kaziranga Safari Route', safety: 90, time: '2h', distance: '45 km', type: 'park' },
-    { id: 3, name: 'Tawang Mountain Pass', safety: 75, time: '8h', distance: '320 km', type: 'mountain' },
-    { id: 4, name: 'Majuli River Crossing', safety: 85, time: '1h 30m', distance: '20 km', type: 'ferry' },
-  ];
+//   const safeRoutes = [
+//     { id: 1, name: 'Guwahati to Shillong', safety: 95, time: '3h 30m', distance: '103 km', type: 'highway' },
+//     { id: 2, name: 'Kaziranga Safari Route', safety: 90, time: '2h', distance: '45 km', type: 'park' },
+//     { id: 3, name: 'Tawang Mountain Pass', safety: 75, time: '8h', distance: '320 km', type: 'mountain' },
+//     { id: 4, name: 'Majuli River Crossing', safety: 85, time: '1h 30m', distance: '20 km', type: 'ferry' },
+//   ];
 
-  const safeZones = [
-    { id: 1, name: 'Police Station - Guwahati', type: 'police', lat: 26.1445, lng: 91.7362 },
-    { id: 2, name: 'Hospital - Dispur', type: 'hospital', lat: 26.1433, lng: 91.7898 },
-    { id: 3, name: 'Tourist Help Center - Shillong', type: 'help', lat: 25.5788, lng: 91.8933 },
-  ];
+//   const safeZones = [
+//     { id: 1, name: 'Police Station - Guwahati', type: 'police', lat: 26.1445, lng: 91.7362 },
+//     { id: 2, name: 'Hospital - Dispur', type: 'hospital', lat: 26.1433, lng: 91.7898 },
+//     { id: 3, name: 'Tourist Help Center - Shillong', type: 'help', lat: 25.5788, lng: 91.8933 },
+//   ];
 
-  return (
-    <div className="p-6 md:p-8 space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-4xl font-black mb-2 text-white">Safe Routes</h1>
-        <p className="text-gray-300 text-lg">Find and navigate through the safest routes in Northeast India</p>
-      </div>
+//   return (
+//     <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+//       <div>
+//         <h1 className="text-4xl font-black mb-2 text-white">Safe Routes</h1>
+//         <p className="text-gray-300 text-lg">Find and navigate through the safest routes in Northeast India</p>
+//       </div>
 
-      {/* Search Bar */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            placeholder="Search for destinations, routes, or places..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-12 bg-gray-800 border-gray-700 text-white"
-          />
-        </div>
-        <Button onClick={() => setShowFilters(!showFilters)} variant="outline" className="gap-2 border-gray-700 text-gray-300 hover:bg-gray-800">
-          <Filter className="w-4 h-4" />
-          Filters
-        </Button>
-      </div>
+//       {/* Search Bar */}
+//       <div className="flex flex-col md:flex-row gap-4">
+//         <div className="flex-1 relative">
+//           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+//           <Input
+//             placeholder="Search for destinations, routes, or places..."
+//             value={searchQuery}
+//             onChange={(e) => setSearchQuery(e.target.value)}
+//             className="pl-10 h-12 bg-gray-800 border-gray-700 text-white"
+//           />
+//         </div>
+//         <Button onClick={() => setShowFilters(!showFilters)} variant="outline" className="gap-2 border-gray-700 text-gray-300 hover:bg-gray-800">
+//           <Filter className="w-4 h-4" />
+//           Filters
+//         </Button>
+//       </div>
 
-      {/* Filters */}
-      {showFilters && (
-        <Card className="p-4 animate-slide-up bg-gray-800 border-gray-700">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-sm mb-2 block text-gray-200">Route Type</Label>
-              <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
-                <option>All Types</option>
-                <option>Highway</option>
-                <option>Mountain</option>
-                <option>Park</option>
-                <option>Ferry</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-sm mb-2 block text-gray-200">Safety Level</Label>
-              <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
-                <option>All Levels</option>
-                <option>90% - 100%</option>
-                <option>75% - 90%</option>
-                <option>Below 75%</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-sm mb-2 block text-gray-200">Distance</Label>
-              <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
-                <option>Any Distance</option>
-                <option>Less than 50km</option>
-                <option>50km - 150km</option>
-                <option>More than 150km</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-sm mb-2 block text-gray-200">Travel Time</Label>
-              <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
-                <option>Any Duration</option>
-                <option>Less than 2 hours</option>
-                <option>2 - 5 hours</option>
-                <option>More than 5 hours</option>
-              </select>
-            </div>
-          </div>
-        </Card>
-      )}
+//       {/* Filters */}
+//       {showFilters && (
+//         <Card className="p-4 animate-slide-up bg-gray-800 border-gray-700">
+//           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+//             <div>
+//               <Label className="text-sm mb-2 block text-gray-200">Route Type</Label>
+//               <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
+//                 <option>All Types</option>
+//                 <option>Highway</option>
+//                 <option>Mountain</option>
+//                 <option>Park</option>
+//                 <option>Ferry</option>
+//               </select>
+//             </div>
+//             <div>
+//               <Label className="text-sm mb-2 block text-gray-200">Safety Level</Label>
+//               <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
+//                 <option>All Levels</option>
+//                 <option>90% - 100%</option>
+//                 <option>75% - 90%</option>
+//                 <option>Below 75%</option>
+//               </select>
+//             </div>
+//             <div>
+//               <Label className="text-sm mb-2 block text-gray-200">Distance</Label>
+//               <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
+//                 <option>Any Distance</option>
+//                 <option>Less than 50km</option>
+//                 <option>50km - 150km</option>
+//                 <option>More than 150km</option>
+//               </select>
+//             </div>
+//             <div>
+//               <Label className="text-sm mb-2 block text-gray-200">Travel Time</Label>
+//               <select className="w-full p-2 border bg-gray-700 rounded-lg text-sm text-white">
+//                 <option>Any Duration</option>
+//                 <option>Less than 2 hours</option>
+//                 <option>2 - 5 hours</option>
+//                 <option>More than 5 hours</option>
+//               </select>
+//             </div>
+//           </div>
+//         </Card>
+//       )}
 
-      {/* Map Container - LEAFLET INTEGRATION */}
-      <div className="h-96 rounded-xl overflow-hidden border border-gray-700 relative z-0 bg-gray-800">
-        <MapContainer 
-          center={[26.1445, 91.7362]} 
-          zoom={13} 
-          scrollWheelZoom={true} 
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {safeZones.map((zone) => (
-            <Marker key={zone.id} position={[zone.lat, zone.lng]}>
-              <Popup>
-                <div className="text-black font-sans">
-                  <strong className="block text-lg">{zone.name}</strong>
-                  <span className="capitalize text-sm text-gray-600">{zone.type}</span>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+//       {/* Map Container - LEAFLET INTEGRATION */}
+//       <div className="h-96 rounded-xl overflow-hidden border border-gray-700 relative z-0 bg-gray-800">
+//         <MapContainer 
+//           center={[26.1445, 91.7362]} 
+//           zoom={13} 
+//           scrollWheelZoom={true} 
+//           style={{ height: '100%', width: '100%' }}
+//         >
+//           <TileLayer
+//             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+//             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+//           />
+//           {safeZones.map((zone) => (
+//             <Marker key={zone.id} position={[zone.lat, zone.lng]}>
+//               <Popup>
+//                 <div className="text-black font-sans">
+//                   <strong className="block text-lg">{zone.name}</strong>
+//                   <span className="capitalize text-sm text-gray-600">{zone.type}</span>
+//                 </div>
+//               </Popup>
+//             </Marker>
+//           ))}
+//         </MapContainer>
         
-        {/* Map Overlays */}
-        <div className="absolute top-4 right-4 bg-gray-800/90 backdrop-blur rounded-lg shadow-lg p-2 z-[1000] border border-gray-700">
-          <Button variant="ghost" size="sm" className="block w-full text-left justify-start gap-2 text-gray-300 hover:bg-gray-700">
-            <Navigation className="w-4 h-4" />
-            My Location
-          </Button>
-          <Button variant="ghost" size="sm" className="block w-full text-left justify-start gap-2 text-gray-300 hover:bg-gray-700">
-            <Download className="w-4 h-4" />
-            Download Map
-          </Button>
-        </div>
-      </div>
+//         {/* Map Overlays */}
+//         <div className="absolute top-4 right-4 bg-gray-800/90 backdrop-blur rounded-lg shadow-lg p-2 z-[1000] border border-gray-700">
+//           <Button variant="ghost" size="sm" className="block w-full text-left justify-start gap-2 text-gray-300 hover:bg-gray-700">
+//             <Navigation className="w-4 h-4" />
+//             My Location
+//           </Button>
+//           <Button variant="ghost" size="sm" className="block w-full text-left justify-start gap-2 text-gray-300 hover:bg-gray-700">
+//             <Download className="w-4 h-4" />
+//             Download Map
+//           </Button>
+//         </div>
+//       </div>
 
-      {/* Recommended Safe Routes */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-black text-white">Recommended Safe Routes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {safeRoutes.map((route) => (
-            <Card 
-              key={route.id} 
-              className={`p-5 cursor-pointer transition-all hover:shadow-lg hover:shadow-blue-900/10 bg-gray-800 border-gray-700 ${
-                selectedRoute === route.id ? 'ring-2 ring-blue-500' : ''
-              }`}
-              onClick={() => setSelectedRoute(route.id)}
-            >
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="font-bold text-lg text-white">{route.name}</h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                  route.safety >= 90 ? 'bg-green-500/10 text-green-500' : 
-                  route.safety >= 75 ? 'bg-yellow-500/10 text-yellow-500' : 
-                  'bg-red-500/10 text-red-500'
-                }`}>
-                  {route.safety}% Safe
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-gray-300 mb-3">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {route.time}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Navigation className="w-4 h-4" />
-                  {route.distance}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
-                  {route.type}
-                </span>
-                <Button size="sm">View Details</Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+//       {/* Recommended Safe Routes */}
+//       <div className="space-y-4">
+//         <h2 className="text-2xl font-black text-white">Recommended Safe Routes</h2>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//           {safeRoutes.map((route) => (
+//             <Card 
+//               key={route.id} 
+//               className={`p-5 cursor-pointer transition-all hover:shadow-lg hover:shadow-blue-900/10 bg-gray-800 border-gray-700 ${
+//                 selectedRoute === route.id ? 'ring-2 ring-blue-500' : ''
+//               }`}
+//               onClick={() => setSelectedRoute(route.id)}
+//             >
+//               <div className="flex justify-between items-start mb-3">
+//                 <h3 className="font-bold text-lg text-white">{route.name}</h3>
+//                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+//                   route.safety >= 90 ? 'bg-green-500/10 text-green-500' : 
+//                   route.safety >= 75 ? 'bg-yellow-500/10 text-yellow-500' : 
+//                   'bg-red-500/10 text-red-500'
+//                 }`}>
+//                   {route.safety}% Safe
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-4 text-sm text-gray-300 mb-3">
+//                 <span className="flex items-center gap-1">
+//                   <Clock className="w-4 h-4" />
+//                   {route.time}
+//                 </span>
+//                 <span className="flex items-center gap-1">
+//                   <Navigation className="w-4 h-4" />
+//                   {route.distance}
+//                 </span>
+//               </div>
+//               <div className="flex justify-between items-center">
+//                 <span className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
+//                   {route.type}
+//                 </span>
+//                 <Button size="sm">View Details</Button>
+//               </div>
+//             </Card>
+//           ))}
+//         </div>
+//       </div>
 
-      {/* Nearby Safe Zones */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-black text-white">Nearby Safe Zones</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {safeZones.map((zone) => (
-            <Card key={zone.id} className="p-5 hover:shadow-lg transition-all bg-gray-800 border-gray-700">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  zone.type === 'police' ? 'bg-blue-500/10' :
-                  zone.type === 'hospital' ? 'bg-red-500/10' :
-                  'bg-green-500/10'
-                }`}>
-                  {zone.type === 'police' ? <Shield className="w-5 h-5 text-blue-500" /> :
-                   zone.type === 'hospital' ? <Activity className="w-5 h-5 text-red-500" /> :
-                   <HelpCircle className="w-5 h-5 text-green-500" />}
-                </div>
-                <h3 className="font-bold text-white">{zone.name}</h3>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-300">
-                <MapPin className="w-4 h-4" />
-                {zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-700">
-                  <Navigation className="w-4 h-4 mr-1" />
-                  Navigate
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-700">
-                  <Phone className="w-4 h-4 mr-1" />
-                  Contact
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+//       {/* Nearby Safe Zones */}
+//       <div className="space-y-4">
+//         <h2 className="text-2xl font-black text-white">Nearby Safe Zones</h2>
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//           {safeZones.map((zone) => (
+//             <Card key={zone.id} className="p-5 hover:shadow-lg transition-all bg-gray-800 border-gray-700">
+//               <div className="flex items-center gap-3 mb-3">
+//                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+//                   zone.type === 'police' ? 'bg-blue-500/10' :
+//                   zone.type === 'hospital' ? 'bg-red-500/10' :
+//                   'bg-green-500/10'
+//                 }`}>
+//                   {zone.type === 'police' ? <Shield className="w-5 h-5 text-blue-500" /> :
+//                    zone.type === 'hospital' ? <Activity className="w-5 h-5 text-red-500" /> :
+//                    <HelpCircle className="w-5 h-5 text-green-500" />}
+//                 </div>
+//                 <h3 className="font-bold text-white">{zone.name}</h3>
+//               </div>
+//               <div className="flex items-center gap-2 text-sm text-gray-300">
+//                 <MapPin className="w-4 h-4" />
+//                 {zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}
+//               </div>
+//               <div className="mt-3 flex gap-2">
+//                 <Button size="sm" variant="outline" className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-700">
+//                   <Navigation className="w-4 h-4 mr-1" />
+//                   Navigate
+//                 </Button>
+//                 <Button size="sm" variant="outline" className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-700">
+//                   <Phone className="w-4 h-4 mr-1" />
+//                   Contact
+//                 </Button>
+//               </div>
+//             </Card>
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 
 // ==================== SOS PAGE ====================
 const SOSPage = () => {
