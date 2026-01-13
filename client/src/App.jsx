@@ -1658,6 +1658,7 @@ const ServicesPage = () => {
 
 // ==================== GUIDES PAGE ====================
 // ==================== GUIDES PAGE (Safe & Robust) ====================
+// ==================== GUIDES PAGE (Fixed Image Issue) ====================
 const GuidesPage = () => {
   // 1. Static Guides Data
   const [guides] = useState([
@@ -1701,38 +1702,44 @@ const GuidesPage = () => {
 
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [toast, setToast] = useState(null);
-  const [apod, setApod] = useState(null);
+  
+  // Default State (Taaki shuru mein blank na dikhe)
+  const [apod, setApod] = useState({
+      url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+      title: "Loading Cosmic View...",
+      date: "Today",
+      explanation: "Fetching latest image from NASA..."
+  });
 
   // 2. Robust API Fetching with Fallback
- // client/src/App.jsx -> GuidesPage component mein ye replace karein
-
   useEffect(() => {
-    // 🟢 Step 1: Key Environment Variable se uthao
-    const apiKey = import.meta.env.VITE_NASA_API_KEY || 'DEMO_KEY';
-    
-    // Debugging ke liye (Browser console mein dikhega)
-    console.log("Fetching NASA APOD with Key ending in:", apiKey.slice(-4));
-
-    // 🟢 Step 2: API Call with Key
-    fetch(`https://api.nasa.gov/planetary/apod?api_key=${apiKey}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("NASA API Rate Limit or Error");
-        return res.json();
-      })
-      .then(data => {
-        if (data.media_type === 'video') throw new Error("Video not supported");
+    const fetchSpaceImage = async () => {
+      try {
+        // DEMO_KEY aksar fail hoti hai, isliye hum try-catch use kar rahe hain
+        const apiKey = 'DEMO_KEY'; 
+        const response = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${apiKey}`);
+        
+        if (!response.ok) throw new Error("NASA API Failed");
+        
+        const data = await response.json();
+        
+        // Agar video hai toh error throw karo (hum sirf image dikhayenge)
+        if (data.media_type === 'video') throw new Error("Video format not supported");
+        
         setApod(data);
-      })
-      .catch(err => {
+      } catch (err) {
         console.warn("Using Fallback Space Image:", err.message);
-        // Fallback Image
+        // ✅ Fallback Image (Agar API fail ho jaye)
         setApod({
-          url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
-          title: "Earth from Orbit (Fallback View)",
-          date: new Date().toISOString().split('T')[0],
-          explanation: "Connecting to NASA... In the meantime, enjoy this view of Earth."
+          url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop",
+          title: "Earth from Orbit (Backup View)",
+          date: new Date().toLocaleDateString(),
+          explanation: "NASA API is currently unavailable. Enjoy this stunning view of Earth from space while we reconnect."
         });
-      });
+      }
+    };
+
+    fetchSpaceImage();
   }, []);
 
   const handleBookGuide = (guideId) => {
@@ -1740,7 +1747,7 @@ const GuidesPage = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 animate-fade-in">
+    <div className="p-6 md:p-8 space-y-8 animate-fade-in pb-20">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
       
       <div>
@@ -1749,8 +1756,7 @@ const GuidesPage = () => {
       </div>
 
       {/* --- NASA APOD SECTION --- */}
-      {apod && (
-        <Card className="relative overflow-hidden border-gray-700 group h-64 md:h-80 shadow-2xl rounded-2xl">
+      <Card className="relative overflow-hidden border-gray-700 group h-64 md:h-80 shadow-2xl rounded-2xl bg-gray-800">
           {/* Background Image */}
           <div 
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
@@ -1777,16 +1783,15 @@ const GuidesPage = () => {
               {apod.explanation}
             </p>
           </div>
-        </Card>
-      )}
+      </Card>
       {/* ----------------------------- */}
 
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            placeholder="Search guides by name, specialty, or language..."
+          <Input 
+            placeholder="Search guides by name, specialty, or language..." 
             className="pl-10 h-12 bg-gray-800 border-gray-700 text-white"
           />
         </div>
