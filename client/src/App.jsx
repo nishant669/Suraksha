@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // ✅ 1. Auth & API Imports
 import { useAuth } from './context/AuthContext'; 
-import { getWeather, getSOSHistory } from './services/api';
+import { getWeather, getSOSHistory, chatWithAI } from './services/api';
 
 // ✅ 2. New Page Import 
 
