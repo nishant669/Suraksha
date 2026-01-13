@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // ✅ 1. Auth & API Imports
 import { useAuth } from './context/AuthContext'; 
